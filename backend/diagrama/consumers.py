@@ -2,7 +2,8 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from rest_framework.exceptions import ValidationError
-from datetime import timezone
+import base64
+
 
 class DiagramaConsumer(AsyncWebsocketConsumer):
 
@@ -55,16 +56,74 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
 
         try:
             data = json.loads(text_data)
+            message_type = data.get('type')  # Nuevo: tipo de mensaje
             accion = data.get("accion")
             payload = data.get("payload")
         except json.JSONDecodeError:
             await self.send_error("Formato JSON inválido")
             return
 
+        # ====== MANEJO DE COMANDOS DE IA ======
+        if message_type == 'ia_command':
+            audio_base64 = data.get('audio')
+            texto = data.get('texto')
+            user = self.scope['user']
+            
+            # Procesar comando de IA
+            resultado = await self.procesar_ia_command(
+                audio_base64=audio_base64,
+                texto=texto,
+                diagrama_id=self.diagrama.id,
+                user=user
+                )
+            
+            # Enviar respuesta al cliente que hizo la petición
+            await self.send(text_data=json.dumps({
+                'type': 'ia_response',
+                'data': resultado
+            }))
+            
+            # Si hubo cambios exitosos, notificar a todos
+            if resultado.get('success'):
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'diagrama_actualizado',
+                        'mensaje': resultado.get('mensaje'),
+                        'cambios': resultado.get('cambios')  # Info de qué cambió
+                    }
+                )
+            return
+            # ====== NORMALIZACIÓN AUTOMÁTICA ======
+        if message_type == 'normalizar_diagrama':
+            from diagrama.inteligencia_artificial import normalizar_diagrama
+        
+            # Ejecutar en thread separado porque normalizar_diagrama es síncrono
+            resultado = await database_sync_to_async(normalizar_diagrama)(self.diagrama.id)
+        
+            # Enviar resultado al cliente
+            await self.send(text_data=json.dumps({
+                'type': 'normalizacion_response',
+                'data': resultado
+            }))
+        
+            # Si hubo cambios exitosos, notificar a todos
+            if resultado.get('success') and resultado.get('cambios_realizados', 0) > 0:
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'diagrama_actualizado',
+                        'mensaje': 'Diagrama normalizado automáticamente',
+                        'cambios': {'tipo': 'normalizacion'}
+                    }
+                )
+            return
+        
+        # ====== MANEJO DE ACCIONES TRADICIONALES ======
         if not accion or payload is None:
             await self.send_error("Formato JSON inválido")
             return
-
+    
         acciones = {
             "tabla.agregar": self.agregar_tabla,
             "tabla.actualizar": self.actualizar_tabla,
@@ -79,21 +138,29 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
             "relacion.getAll": self.get_all_relaciones,
             "atributo.getAll": self.get_all_atributos,
             "tabla.getById": self.get_tabla_por_id, 
-            "generar.sql": self.generar_sql,           # ← NUEVO
+            "generar.sql": self.generar_sql,
             "generar.springboot": self.generar_springboot,
         }
+        
         print('🔹 Accion recibida:', accion, payload)
         funcion = acciones.get(accion)
+        
         if funcion:
             try:
                 result = await funcion(payload)
+                
                 if accion == "atributo.getAll":
                     result = {
                         "tabla_id": payload.get("tabla_id"),
                         "atributos": result
                     }
-                if accion not in ['tabla.getAll', 'relacion.getAll', 'atributo.getAll', 'tabla.getById','generar.sql', 'generar.springboot']:
+                
+                # Actualizar diagrama si no es una consulta
+                if accion not in ['tabla.getAll', 'relacion.getAll', 'atributo.getAll', 
+                                 'tabla.getById', 'generar.sql', 'generar.springboot']:
                     self.actualizar_diagrama(self.diagrama.id)
+                
+                # Broadcast a todos los usuarios
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
@@ -111,12 +178,7 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
         else:
             await self.send_error(f"Acción desconocida: {accion}")
 
-    async def broadcast_message(self, event):
-        await self.send(text_data=json.dumps({
-            "accion": event["accion"],
-            "payload": event["payload"],
-            "diagrama_id": event.get("diagrama_id")
-        }))
+
 
     async def send_error(self, message):
         await self.send(text_data=json.dumps({"error": message}))
@@ -129,6 +191,14 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
                 self.room_group_name = None
             except Exception as e:
                 print(f"⚠️ Disconnect Error: {e}")
+    
+    async def broadcast_message(self, event):
+        """Handler para mensajes broadcast del grupo"""
+        await self.send(text_data=json.dumps({
+            "accion": event["accion"],
+            "payload": event["payload"],
+            "diagrama_id": event["diagrama_id"]
+        }))
 
     # ===================== Métodos DB seguros =====================
 
@@ -359,3 +429,21 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
     def run_springboot_generation(self, diagrama_id):
         from script.generar_script import spring_boot  # Función auxiliar
         return spring_boot(diagrama_id)
+    
+    @database_sync_to_async
+    def procesar_ia_command(self, audio_base64, texto, diagrama_id, user):
+        from diagrama.inteligencia_artificial import procesar_comando_ia
+        """Llama a la función de IA de forma síncrona"""
+        return procesar_comando_ia(
+            audio_base64=audio_base64,
+            texto=texto,
+            diagrama_id=diagrama_id,
+            user=user
+        )
+    
+    async def diagrama_actualizado(self, event):
+        """Notifica a todos los clientes que el diagrama cambió"""
+        await self.send(text_data=json.dumps({
+            'type': 'diagrama_updated',
+            'mensaje': event['mensaje']
+        }))

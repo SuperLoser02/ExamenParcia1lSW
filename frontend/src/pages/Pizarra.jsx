@@ -26,6 +26,17 @@ export default function Pizarra() {
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const [isDraggingStage, setIsDraggingStage] = useState(false);
   
+  // Estados para IA
+  const [isRecording, setIsRecording] = useState(false);
+  const [textoComando, setTextoComando] = useState("");
+  const [respuestaIA, setRespuestaIA] = useState(null);
+
+  // ========== 1. AGREGAR ESTADOS (después de los estados existentes) ==========
+  const [normalizando, setNormalizando] = useState(false);
+  const [resultadoNormalizacion, setResultadoNormalizacion] = useState(null);
+
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   // Estados para crear tablas
   const [showCrearTablaModal, setShowCrearTablaModal] = useState(false);
   const [nuevaTablaPos, setNuevaTablaPos] = useState({ x: 0, y: 0 });
@@ -221,6 +232,34 @@ export default function Pizarra() {
               zipLink.click();
               window.URL.revokeObjectURL(zipUrl);
               setGenerandoArchivo(false);
+              break;
+
+            case "ia_response":
+              setRespuestaIA(payload);
+              console.log("Respuesta IA:", payload);
+              if (payload.success) {
+              // Refrescar tablas y relaciones
+              fetchTablas();
+              fetchRelaciones();
+              }
+              break;
+            case "diagrama_actualizado":
+              if (payload.cambios?.tipo === 'normalizacion') {
+                fetchTablas();
+                fetchRelaciones();
+              }
+              break;
+
+            case "normalizacion_response":
+              setNormalizando(false);
+              setResultadoNormalizacion(payload);
+              
+              if (payload.success && payload.cambios_realizados > 0) {
+                setTimeout(() => {
+                  fetchTablas();
+                  fetchRelaciones();
+                }, 500);
+              }
               break;
           }
           resetInactivityTimer();
@@ -547,6 +586,18 @@ const handleActualizarAtributo = () => {
       });
     }
   };
+  // ========== 2. FUNCIÓN PARA NORMALIZAR (después de las funciones existentes) ==========
+  const handleNormalizar = () => {
+    if (window.confirm("¿Deseas normalizar automáticamente este diagrama?\n\nLa IA analizará las tablas actuales y aplicará formas normales (1FN, 2FN, 3FN).")) {
+      setNormalizando(true);
+      setResultadoNormalizacion(null);
+      
+      sendMessage({
+        type: "normalizar_diagrama",
+        diagrama_id: id
+      });
+    }
+  };
   // Renderizar relación
   const renderRelacion = (relacion) => {
     const origen = tablas.find(t => t.id === relacion.tabla_origen);
@@ -602,6 +653,68 @@ const handleActualizarAtributo = () => {
     const tipo = TIPOS_DATO_OPCIONES.find(t => t.value === value);
     return tipo ? tipo.label : value;
   };
+  // ========== FUNCIONES DE IA ==========
+  const iniciarGrabacion = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+    
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+  
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        enviarAudio(audioBlob);
+      };
+  
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error accediendo al micrófono:", error);
+      alert("No se pudo acceder al micrófono");
+    }
+  };
+
+  const detenerGrabacion = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+  
+  const enviarAudio = async (audioBlob) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Audio = reader.result.split(",")[1];
+      
+      sendMessage({
+        type: "ia_command",
+        audio: base64Audio,
+        diagrama_id: id
+      });
+    };
+    reader.readAsDataURL(audioBlob);
+  };
+  
+  const enviarTexto = () => {
+    if (!textoComando.trim()) {
+      alert("Escribe un comando");
+      return;
+    }
+  
+    sendMessage({
+      type: "ia_command",
+      texto: textoComando,
+      diagrama_id: id
+    });
+
+    setTextoComando("");
+  };
 
   const TIPOS_DATO_OPCIONES = [
     { value: "integer", label: "INT" },
@@ -640,6 +753,22 @@ const handleActualizarAtributo = () => {
           }}
         >
           {generandoArchivo ? "Generando..." : "Generar SQL"}
+        </button>
+        <button
+          onClick={handleNormalizar}
+          disabled={normalizando || generandoArchivo}
+          style={{
+            backgroundColor: "#8b5cf6",
+            color: "white",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            cursor: normalizando ? "not-allowed" : "pointer",
+            fontWeight: "500",
+            opacity: normalizando ? 0.6 : 1
+          }}
+        >
+          {normalizando ? "Normalizando..." : "🔧 Normalizar"}
         </button>
         
         <button
@@ -1336,6 +1465,198 @@ const handleActualizarAtributo = () => {
         </div>
       </div>
     )}
+
+    {/* ========== PANEL ASISTENTE IA ========== */}
+    <div style={{
+      position: "fixed",
+      bottom: "20px",
+      right: "20px",
+      backgroundColor: "#fff",
+      padding: "20px",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      width: "350px",
+      zIndex: 1000
+    }}>
+      <h3 style={{ marginTop: 0 }}>🤖 Asistente IA</h3>
+    
+      {/* Input de texto */}
+      <div style={{ marginBottom: "15px" }}>
+        <input
+          type="text"
+          value={textoComando}
+          onChange={(e) => setTextoComando(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && enviarTexto()}
+          placeholder="Ej: crea tabla usuarios con id, nombre, email"
+          style={{
+            width: "100%",
+            padding: "10px",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            marginBottom: "8px"
+          }}
+        />
+        <button
+          onClick={enviarTexto}
+          style={{
+            width: "100%",
+            padding: "10px",
+            backgroundColor: "#007bff",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+        >
+          Enviar Texto
+        </button>
+      </div>
+    
+      {/* Botón de grabación */}
+      <button
+        onClick={isRecording ? detenerGrabacion : iniciarGrabacion}
+        style={{
+          width: "100%",
+          padding: "15px",
+          backgroundColor: isRecording ? "#dc3545" : "#28a745",
+          color: "#fff",
+          border: "none",
+          borderRadius: "6px",
+          cursor: "pointer",
+          fontSize: "16px",
+          fontWeight: "bold"
+        }}
+      >
+        {isRecording ? "🔴 Detener Grabación" : "🎤 Grabar Comando"}
+      </button>
+    
+      {/* Respuesta de la IA */}
+      {respuestaIA && (
+        <div style={{
+          marginTop: "15px",
+          padding: "12px",
+          backgroundColor: respuestaIA.success ? "#d4edda" : "#f8d7da",
+          borderRadius: "6px",
+          fontSize: "14px"
+        }}>
+          <strong>{respuestaIA.success ? "✅ Éxito:" : "❌ Error:"}</strong>
+          <p style={{ margin: "5px 0 0 0" }}>{respuestaIA.mensaje}</p>
+          
+          {respuestaIA.detalles && (
+            <ul style={{ marginTop: "8px", paddingLeft: "20px" }}>
+              {respuestaIA.detalles.map((detalle, idx) => (
+                <li key={idx}>{detalle}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {resultadoNormalizacion && (
+      <div style={styles.modalOverlay} onClick={() => setResultadoNormalizacion(null)}>
+        <div 
+          style={{ 
+            ...styles.modal, 
+            ...styles.modalLarge,
+            maxWidth: "600px"
+          }} 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 style={{
+            ...styles.modalTitle,
+            color: resultadoNormalizacion.success ? "#059669" : "#dc2626"
+          }}>
+            {resultadoNormalizacion.success ? "✅ Normalización Completada" : "❌ Error"}
+          </h3>
+          
+          <div style={{ marginBottom: "20px" }}>
+            {/* Análisis */}
+            {resultadoNormalizacion.analisis && (
+              <div style={{
+                padding: "12px",
+                backgroundColor: "#f3f4f6",
+                borderRadius: "6px",
+                marginBottom: "15px",
+                fontSize: "14px"
+              }}>
+                <strong>Análisis:</strong>
+                <p style={{ margin: "8px 0 0 0" }}>{resultadoNormalizacion.analisis}</p>
+              </div>
+            )}
+            
+            {/* Violaciones */}
+            {resultadoNormalizacion.violaciones?.length > 0 && (
+              <div style={{ marginBottom: "15px" }}>
+                <strong style={{ color: "#dc2626", fontSize: "14px" }}>
+                  ⚠️ Problemas detectados:
+                    </strong>
+                <ul style={{ 
+                  marginTop: "8px", 
+                  paddingLeft: "20px", 
+                  fontSize: "13px",
+                  color: "#6b7280"
+                }}>
+                  {resultadoNormalizacion.violaciones.map((v, idx) => (
+                    <li key={idx}>{v}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Resultado */}
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: resultadoNormalizacion.cambios_realizados > 0 ? "#d1fae5" : "#fef3c7",
+              borderRadius: "6px",
+              marginBottom: "15px"
+            }}>
+              <strong style={{ fontSize: "14px" }}>
+                {resultadoNormalizacion.cambios_realizados > 0 
+                  ? `✓ Se realizaron ${resultadoNormalizacion.cambios_realizados} cambios` 
+                  : "ℹ️ El diagrama ya está normalizado"}
+              </strong>
+            </div>
+            
+            {/* Detalles */}
+            {resultadoNormalizacion.detalles?.length > 0 && (
+              <div>
+                <strong style={{ fontSize: "14px" }}>Detalles:</strong>
+                <div style={{ 
+                  maxHeight: "250px", 
+                  overflowY: "auto", 
+                  marginTop: "10px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px"
+                }}>
+                  {resultadoNormalizacion.detalles.map((detalle, idx) => (
+                    <div 
+                      key={idx}
+                      style={{
+                        padding: "10px",
+                        backgroundColor: detalle.success ? "#f0fdf4" : "#fef2f2",
+                        borderBottom: "1px solid #e5e7eb",
+                        fontSize: "13px"
+                      }}
+                    >
+                      {detalle.success ? "✓" : "✗"} {detalle.mensaje}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div style={styles.btnGroup}>
+            <button 
+              onClick={() => setResultadoNormalizacion(null)} 
+              style={styles.btnPrimary}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </div>
   </div>
   );
 }
