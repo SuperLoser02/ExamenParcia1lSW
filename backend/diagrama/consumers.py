@@ -149,16 +149,18 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
             try:
                 result = await funcion(payload)
                 
+                # Actualizar diagrama si no es una consulta
+                if accion not in ['tabla.getAll', 'relacion.getAll', 'atributo.getAll', 
+                                 'tabla.getById', 'generar.sql', 'generar.springboot']:
+                    self.actualizar_diagrama(self.diagrama.id)
+                
                 if accion == "atributo.getAll":
                     result = {
                         "tabla_id": payload.get("tabla_id"),
                         "atributos": result
                     }
                 
-                # Actualizar diagrama si no es una consulta
-                if accion not in ['tabla.getAll', 'relacion.getAll', 'atributo.getAll', 
-                                 'tabla.getById', 'generar.sql', 'generar.springboot']:
-                    self.actualizar_diagrama(self.diagrama.id)
+
                 
                 # Broadcast a todos los usuarios
                 await self.channel_layer.group_send(

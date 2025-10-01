@@ -1,7 +1,9 @@
 let socket = null;
 
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+
 export const connectWebSocket = () => {
-  socket = new WebSocket("ws://localhost:8000/ws/diagrama/"); 
+  socket = new WebSocket(`${WS_URL}/ws/diagrama/`); 
   // 👆 ajusta la URL si tu backend corre en otra ruta
 
   socket.onopen = () => {

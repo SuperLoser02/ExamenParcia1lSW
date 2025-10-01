@@ -55,10 +55,10 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
-      - VITE_HMR_HOST=localhost
+      - VITE_HMR_HOST=${IP_SERVIDOR}
       - VITE_HMR_PORT=5173
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000
+      - VITE_API_URL=http://${IP_SERVIDOR}:8000 #Cambiear esto
+      - VITE_WS_URL=ws://${IP_SERVIDOR}:8000 #Cambiear esto
     command: ["sh", "-c", "npm install && npm run dev -- --host"]
     ports:
       - "5173:5173"

@@ -238,9 +238,9 @@ export default function Pizarra() {
               setRespuestaIA(payload);
               console.log("Respuesta IA:", payload);
               if (payload.success) {
-              // Refrescar tablas y relaciones
-              fetchTablas();
-              fetchRelaciones();
+                fetchTablas();
+                fetchRelaciones();
+                fetchRelaciones();
               }
               break;
             case "diagrama_actualizado":
@@ -598,6 +598,47 @@ const handleActualizarAtributo = () => {
       });
     }
   };
+// Función para calcular intersección con borde de rectángulo
+  const calcularInterseccionBorde = (centerX, centerY, width, height, targetX, targetY) => {
+    // Calcular ángulo hacia el objetivo
+    const dx = targetX - centerX;
+    const dy = targetY - centerY;
+    const angle = Math.atan2(dy, dx);
+    
+    // Probar intersección con cada borde
+    const halfW = width / 2;
+    const halfH = height / 2;
+    
+    // Borde derecho
+    const rightX = centerX + halfW;
+    const rightY = centerY + (halfW * Math.tan(angle));
+    
+    // Borde izquierdo
+    const leftX = centerX - halfW;
+    const leftY = centerY - (halfW * Math.tan(angle));
+    
+    // Borde inferior
+    const bottomY = centerY + halfH;
+    const bottomX = centerX + (halfH / Math.tan(angle));
+    
+    // Borde superior
+    const topY = centerY - halfH;
+    const topX = centerX - (halfH / Math.tan(angle));
+    
+    // Determinar cuál intersección es válida
+    if (Math.abs(rightY - centerY) <= halfH && dx > 0) {
+      return { x: rightX, y: rightY };
+    } else if (Math.abs(leftY - centerY) <= halfH && dx < 0) {
+      return { x: leftX, y: leftY };
+    } else if (Math.abs(bottomX - centerX) <= halfW && dy > 0) {
+      return { x: bottomX, y: bottomY };
+    } else if (Math.abs(topX - centerX) <= halfW && dy < 0) {
+      return { x: topX, y: topY };
+    }
+    
+    return { x: centerX, y: centerY };
+  };
+
   // Renderizar relación
   const renderRelacion = (relacion) => {
     const origen = tablas.find(t => t.id === relacion.tabla_origen);
@@ -608,10 +649,26 @@ const handleActualizarAtributo = () => {
     const origenDim = calcularDimensionesTabla(origen);
     const destinoDim = calcularDimensionesTabla(destino);
     
-    const startX = origen.pos_x + origenDim.width / 2;
-    const startY = origen.pos_y + origenDim.height / 2;
-    const endX = destino.pos_x + destinoDim.width / 2;
-    const endY = destino.pos_y + destinoDim.height / 2;
+    const origenCenterX = origen.pos_x + origenDim.width / 2;
+    const origenCenterY = origen.pos_y + origenDim.height / 2;
+    const destinoCenterX = destino.pos_x + destinoDim.width / 2;
+    const destinoCenterY = destino.pos_y + destinoDim.height / 2;
+    
+    // Calcular puntos en los bordes
+    const startPoint = calcularInterseccionBorde(
+      origenCenterX, origenCenterY, origenDim.width, origenDim.height,
+      destinoCenterX, destinoCenterY
+    );
+    
+    const endPoint = calcularInterseccionBorde(
+      destinoCenterX, destinoCenterY, destinoDim.width, destinoDim.height,
+      origenCenterX, origenCenterY
+    );
+    
+    const startX = startPoint.x;
+    const startY = startPoint.y;
+    const endX = endPoint.x;
+    const endY = endPoint.y;
     
     const getStrokeColor = (tipo) => {
       switch(tipo) {
@@ -623,14 +680,44 @@ const handleActualizarAtributo = () => {
       }
     };
     
+    // Calcular punto medio entre origen y destino
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    
+    // Si es asociación muchos a muchos con tabla hijo
+    const esMuchosAMuchos = relacion.tipo_relacion === "asociacion" && 
+                           relacion.tabla_hijo && 
+                           relacion.cardinalidad_origen?.includes("*") && 
+                           relacion.cardinalidad_destino?.includes("*");
+    
+    let lineaHaciaHijo = null;
+    if (esMuchosAMuchos) {
+      const tablaHijo = tablas.find(t => t.id === relacion.tabla_hijo);
+      if (tablaHijo) {
+        const hijoDim = calcularDimensionesTabla(tablaHijo);
+        const hijoX = tablaHijo.pos_x + hijoDim.width / 2;
+        const hijoY = tablaHijo.pos_y + hijoDim.height / 2;
+        
+        lineaHaciaHijo = (
+          <Line
+            points={[midX, midY, hijoX, hijoY]}
+            stroke={getStrokeColor(relacion.tipo_relacion)}
+            strokeWidth={2}
+            dash={[5, 5]}
+            hitStrokeWidth={20}
+          />
+        );
+      }
+    }
+    
     return (
       <Group 
-      key={relacion.id}
-      onClick={() => {
-        if (!herramientaActiva && window.confirm("¿Eliminar esta relación?")) {
-          handleEliminarRelacion(relacion.id);
-        }
-      }} 
+        key={relacion.id}
+        onClick={() => {
+          if (!herramientaActiva && window.confirm("¿Eliminar esta relación?")) {
+            handleEliminarRelacion(relacion.id);
+          }
+        }} 
       >
         <Line
           points={[startX, startY, endX, endY]}
@@ -638,6 +725,33 @@ const handleActualizarAtributo = () => {
           strokeWidth={2}
           hitStrokeWidth={20}
         />
+        {lineaHaciaHijo}
+        
+        {/* Cardinalidades para asociación */}
+        {relacion.tipo_relacion === "asociacion" && relacion.cardinalidad_origen && relacion.cardinalidad_destino && (
+          <>
+            {/* Cardinalidad cerca del origen */}
+            <Text
+              x={startX + (midX - startX) * 0.2 - 15}
+              y={startY + (midY - startY) * 0.2 - 15}
+              text={relacion.cardinalidad_origen}
+              fontSize={12}
+              fill="#1f2937"
+              fontStyle="bold"
+            />
+            
+            {/* Cardinalidad cerca del destino */}
+            <Text
+              x={endX + (midX - endX) * 0.2 - 15}
+              y={endY + (midY - endY) * 0.2 - 15}
+              text={relacion.cardinalidad_destino}
+              fontSize={12}
+              fill="#1f2937"
+              fontStyle="bold"
+            />
+          </>
+        )}
+        
         {relacion.tipo_relacion === "herencia" && (
           <Line
             points={[endX - 10, endY - 5, endX, endY, endX - 10, endY + 5]}
