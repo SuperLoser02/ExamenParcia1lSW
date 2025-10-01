@@ -63,7 +63,18 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Configuración CORS más segura
+if DEBUG:
+    # En desarrollo: permitir todo
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # En producción: solo IPs/dominios específicos
+    IP_SERVIDOR = os.getenv('IP_SERVIDOR', 'localhost')
+    CORS_ALLOWED_ORIGINS = [
+        f"http://{IP_SERVIDOR}:5173",
+        f"https://{IP_SERVIDOR}:5173",
+        "http://localhost:5173",
+    ]
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'primer_parcial.urls'

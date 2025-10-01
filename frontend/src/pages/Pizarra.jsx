@@ -1627,7 +1627,7 @@ const handleActualizarAtributo = () => {
       </div>
     
       {/* Botón de grabación */}
-      <button
+      {/*<button
         onClick={isRecording ? detenerGrabacion : iniciarGrabacion}
         style={{
           width: "100%",
@@ -1642,7 +1642,7 @@ const handleActualizarAtributo = () => {
         }}
       >
         {isRecording ? "🔴 Detener Grabación" : "🎤 Grabar Comando"}
-      </button>
+      </button>*/}
     
       {/* Respuesta de la IA */}
       {respuestaIA && (

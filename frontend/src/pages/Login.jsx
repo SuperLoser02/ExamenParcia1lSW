@@ -72,12 +72,12 @@ export default function Login() {
             >
                 Crear usuario
             </button>
-            <button
+            {/*<button
                 style={styles.linkButton}
                 onClick={() => navigate("/recover")}
             >
                 ¿Olvidaste tu contraseña?
-            </button>
+            </button>*/}
         </div>
       </div>
     </div>
