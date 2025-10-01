@@ -17,6 +17,12 @@ export default function Dashboard() {
   const [colaboraciones, setColaboraciones] = useState([]);
   const dropdownRef = useRef(null);
 
+  // Crear Diagramas
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newDiagramaName, setNewDiagramaName] = useState("");
+  const [createMessage, setCreateMessage] = useState("");
+  const [creating, setCreating] = useState(false);
+
   // Invitar
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedDiagram, setSelectedDiagram] = useState(null);
@@ -65,6 +71,33 @@ export default function Dashboard() {
     };
     fetchUser();
   }, [navigate]);
+  const handleCreateDiagrama = async () => {
+    setCreateMessage("");
+    
+    if (!newDiagramaName.trim()) {
+      setCreateMessage("El nombre no puede estar vacío");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await axiosInstance.post(
+        "/diagramas/crear_diagrama/",
+        { nombre: newDiagramaName.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Redirigir al nuevo diagrama
+      navigate(`/pizarra/${response.data.id}`);
+      
+    } catch (err) {
+      console.error(err);
+      setCreateMessage("Error al crear el diagrama");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   // Traer diagramas
   const fetchData = async () => {
@@ -291,7 +324,10 @@ export default function Dashboard() {
         {/* Últimos modificados */}
         <h2>Recientes</h2>
         <div style={styles.cardRow}>
-          <div style={{ ...styles.card, ...styles.newCard }}>
+          <div 
+            style={{ ...styles.card, ...styles.newCard, cursor: "pointer" }}
+            onClick={() => setShowCreateModal(true)}
+          >
             <div style={styles.cardPreview}>+</div>
             <div style={styles.cardTitle}>Nuevo diagrama</div>
           </div>
@@ -311,6 +347,65 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+        {showCreateModal && (
+          <div
+            style={styles.modalOverlay}
+            onClick={() => setShowCreateModal(false)}
+          >
+            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+              <h3>Crear nuevo diagrama</h3>
+
+              <label>Nombre del diagrama</label>
+              <input
+                type="text"
+                value={newDiagramaName}
+                onChange={(e) => setNewDiagramaName(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleCreateDiagrama()}
+                placeholder="Ej: Sistema de ventas"
+                style={{
+                  width: "95%",
+                  padding: "8px",
+                  margin: "8px 0",
+                  border: "1px solid #ccc",
+                  borderRadius: "6px",
+                }}
+                autoFocus
+              />
+  
+              <div style={{ marginTop: 12 }}>
+                <button 
+                  style={styles.button} 
+                  onClick={handleCreateDiagrama}
+                  disabled={creating}
+                >
+                  {creating ? "Creando..." : "Crear"}
+                </button>
+                <button
+                  style={{ ...styles.button, background: "gray", marginLeft: 8 }}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setNewDiagramaName("");
+                    setCreateMessage("");
+                  }}
+                  disabled={creating}
+                >
+                  Cancelar
+                </button>
+              </div>
+
+              {createMessage && (
+              <p
+                  style={{
+                    marginTop: 10,
+                    color: createMessage.includes("Error") ? "red" : "green",
+                  }}
+                >
+                  {createMessage}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Mis diagramas */}
         <h2>Mis diagramas</h2>
@@ -388,6 +483,66 @@ export default function Dashboard() {
           ))}
         </div>
       </main>
+      {/* ✅ MODAL FUERA del main, al mismo nivel que tus otros modales */}
+      {showCreateModal && (
+        <div
+          style={styles.modalOverlay}
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Crear nuevo diagrama</h3>
+
+            <label>Nombre del diagrama</label>
+            <input
+              type="text"
+              value={newDiagramaName}
+              onChange={(e) => setNewDiagramaName(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleCreateDiagrama()}
+              placeholder="Ej: Sistema de ventas"
+              style={{
+                width: "95%",
+                padding: "8px",
+                margin: "8px 0",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+              }}
+              autoFocus
+            />
+      
+            <div style={{ marginTop: 12 }}>
+              <button 
+                style={styles.button} 
+                onClick={handleCreateDiagrama}
+                disabled={creating}
+              >
+                {creating ? "Creando..." : "Crear"}
+              </button>
+              <button
+                style={{ ...styles.button, background: "gray", marginLeft: 8 }}
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewDiagramaName("");
+                  setCreateMessage("");
+                }}
+                disabled={creating}
+              >
+                Cancelar
+              </button>
+            </div>
+
+            {createMessage && (
+              <p
+                style={{
+                  marginTop: 10,
+                  color: createMessage.includes("Error") ? "red" : "green",
+                }}
+              >
+                {createMessage}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal de editar nombre */}
       {showEditModal && (

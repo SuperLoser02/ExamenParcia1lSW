@@ -36,10 +36,10 @@ services:
     networks:
       - app-network
     #Comentar esto si no tienes GPU NVIDIA
-    deploy:
-      resources:
-        reservations:
-          devices:
+    #deploy:
+      #resources:
+        #reservations:
+          #devices:
             # - driver: nvidia
             #   count: all
             #   capabilities: [gpu]
