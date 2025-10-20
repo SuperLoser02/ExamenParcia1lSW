@@ -9,6 +9,7 @@ import shutil
 import os
 import zipfile
 import base64
+import glob
 TIPOS_MYSQL_DICT = dict(TIPOS_MYSQL)
 
 def generar_estructura(diagrama_id):
@@ -205,28 +206,40 @@ tipo_de_dato_en_java = {
 }
 
 def spring_boot(diagrama_id):
-    archivo_modelos = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/model/Modelos.java")
-    archivo_repositorios = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/repository/Repositorios.java")
-    archivo_servicios = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/services/Servicios.java")
-    archivo_controladores = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/controller/Controladores.java")
+    base_model = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/model")
+    base_repo = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/repository")
+    base_service = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/services")
+    base_controller = os.path.join(BASE_DIR, "demo/src/main/java/com/example/demo/controller")
+    
+    for carpeta in [base_model, base_repo, base_service, base_controller]:
+        if os.path.exists(carpeta):
+            for archivo_java in glob.glob(os.path.join(carpeta, "*.java")):
+                os.remove(archivo_java)
 
     estructura = generar_estructura(diagrama_id)
+    
+    os.makedirs(base_model, exist_ok=True)
+    os.makedirs(base_repo, exist_ok=True)
+    os.makedirs(base_service, exist_ok=True)
+    os.makedirs(base_controller, exist_ok=True)
 
+    for tabla_id, tabla in estructura['tablas'].items():
+        nombre_clase = tabla['nombre'].capitalize()
+        archivo = os.path.join(base_model, f"{nombre_clase}.java")
+        
     # ==================== MODELOS ====================
-    with open(archivo_modelos, "w", encoding="utf-8") as f:
-        f.write("package com.example.demo.model;\n\n")
-        f.write("import javax.persistence.*;\n")
-        f.write("import java.time.*;\n")
-        f.write("import java.math.BigDecimal;\n")
-        f.write("import java.io.Serializable;\n")
-        f.write("import java.util.Objects;\n\n")
-
-        for tabla_id, tabla in estructura['tablas'].items():
-            nombre_clase = tabla['nombre'].capitalize()
+        with open(archivo, "w", encoding="utf-8") as f:
+            f.write("package com.example.demo.model;\n\n")
+            f.write("import jakarta.persistence.*;\n") #Este se modifico
+            f.write("import java.time.*;\n")
+            f.write("import java.math.BigDecimal;\n")
+            f.write("import java.io.Serializable;\n")
+            f.write("import java.util.Objects;\n\n")
+            
+            
             f.write(f"@Entity\n")
             f.write(f"@Table(name = \"{tabla['nombre']}\")\n")
-            f.write(f"public class {nombre_clase} implements Serializable " + "{\n\n")
-
+            f.write(f"public class {nombre_clase} implements Serializable" + "{\n\n")
             # Variables para manejar PKs compuestas
             tiene_pk_compuesta = len(tabla['pk']) > 1
             tiene_pk_simple = len(tabla['pk']) == 1
@@ -395,14 +408,14 @@ def spring_boot(diagrama_id):
             f.write("}\n\n")
 
     # ==================== REPOSITORIOS ====================
-    with open(archivo_repositorios, "w", encoding="utf-8") as f:
-        f.write("package com.example.demo.repository;\n\n")
-        f.write("import org.springframework.data.jpa.repository.JpaRepository;\n")
-        f.write("import org.springframework.stereotype.Repository;\n")
-        f.write("import com.example.demo.model.*;\n\n")
-
-        for tabla_id, tabla in estructura['tablas'].items():
-            nombre_clase = tabla['nombre'].capitalize()
+    for tabla_id, tabla in estructura['tablas'].items():
+        nombre_clase = tabla['nombre'].capitalize()
+        archivo = os.path.join(base_repo, f"{nombre_clase}Repository.java")    
+        with open(archivo, "w", encoding="utf-8") as f:
+            f.write("package com.example.demo.repository;\n\n")
+            f.write("import org.springframework.data.jpa.repository.JpaRepository;\n")
+            f.write("import org.springframework.stereotype.Repository;\n")
+            f.write("import com.example.demo.model.*;\n\n")
             
             # Determinar tipo de ID
             if len(tabla['pk']) > 1:
@@ -417,18 +430,18 @@ def spring_boot(diagrama_id):
             f.write("}\n\n")
 
     # ==================== SERVICIOS ====================
-    with open(archivo_servicios, "w", encoding="utf-8") as f:
-        f.write("package com.example.demo.services;\n\n")
-        f.write("import com.example.demo.model.*;\n")
-        f.write("import com.example.demo.repository.*;\n")
-        f.write("import org.springframework.beans.BeanUtils;\n")
-        f.write("import org.springframework.stereotype.Service;\n")
-        f.write("import java.util.List;\n")
-        f.write("import java.util.Optional;\n\n")
-        
-        for tabla_id, tabla in estructura['tablas'].items():
-            nombre_clase = tabla['nombre'].capitalize()
-            nombre_var = nombre_clase.lower()
+    for tabla_id, tabla in estructura['tablas'].items():
+        nombre_clase = tabla['nombre'].capitalize()
+        archivo = os.path.join(base_service, f"{nombre_clase}Service.java")
+        nombre_var = nombre_clase.lower()
+        with open(archivo, "w", encoding="utf-8") as f:
+            f.write("package com.example.demo.services;\n\n")
+            f.write("import com.example.demo.model.*;\n")
+            f.write("import com.example.demo.repository.*;\n")
+            f.write("import org.springframework.beans.BeanUtils;\n")
+            f.write("import org.springframework.stereotype.Service;\n")
+            f.write("import java.util.List;\n")
+            f.write("import java.util.Optional;\n\n")
             
             # Determinar tipo de ID
             if len(tabla['pk']) > 1:
@@ -476,18 +489,18 @@ def spring_boot(diagrama_id):
             f.write("}\n\n")
 
     # ==================== CONTROLADORES ====================
-    with open(archivo_controladores, "w", encoding="utf-8") as f:
-        f.write("package com.example.demo.controller;\n\n")
-        f.write("import com.example.demo.model.*;\n")
-        f.write("import com.example.demo.services.*;\n")
-        f.write("import org.springframework.http.ResponseEntity;\n")
-        f.write("import org.springframework.web.bind.annotation.*;\n")
-        f.write("import java.util.List;\n")
-        f.write("import java.util.Optional;\n\n")
-
-        for tabla_id, tabla in estructura['tablas'].items():
-            nombre_clase = tabla['nombre'].capitalize()
-            nombre_var = nombre_clase.lower()
+    for tabla_id, tabla in estructura['tablas'].items():
+        nombre_clase = tabla['nombre'].capitalize()
+        nombre_var = nombre_clase.lower()
+        archivo = os.path.join(base_controller, f"{nombre_clase}Controller.java")
+        with open(archivo, "w", encoding="utf-8") as f:
+            f.write("package com.example.demo.controller;\n\n")
+            f.write("import com.example.demo.model.*;\n")
+            f.write("import com.example.demo.services.*;\n")
+            f.write("import org.springframework.http.ResponseEntity;\n")
+            f.write("import org.springframework.web.bind.annotation.*;\n")
+            f.write("import java.util.List;\n")
+            f.write("import java.util.Optional;\n\n")
             
             # Determinar tipo de ID
             if len(tabla['pk']) > 1:
