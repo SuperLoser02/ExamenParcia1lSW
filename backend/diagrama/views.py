@@ -176,3 +176,41 @@ class DiagramaViewSet(viewsets.ModelViewSet):
         response = HttpResponse(zip, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename=demo.zip'
         return response
+
+
+
+
+# Testeo de estructuras para el backend y frontend
+    @action(detail=True, methods=["GET"])
+    def test_estructura_backend(self, request, pk=None):
+        from script.generar_script import generar_estructura
+        try:
+            diagrama = self.get_object()
+        except:
+            return Response({"error": "El diagrama no existe"}, status=404)
+        estructura = generar_estructura(diagrama.id)
+        return Response({"estructura": estructura})
+    
+    @action(detail=True, methods=["GET"])
+    def test_spring_boot_backend(self, request, pk=None):
+        from script.generar_script import spring_boot
+        try:
+            diagrama = self.get_object()
+        except:
+            return Response({"error": "El diagrama no existe"}, status=404)
+        zip = spring_boot(diagrama.id)
+        response = HttpResponse(zip, content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename=demo.zip'
+        return response
+    
+    @action(detail=True, methods=["GET"])
+    def test_flutter_frontend(self, request, pk=None):
+        from flutter.craer_flutter import flutter
+        try:
+            Diagrama = self.get_object()
+        except:
+            return Response({"error": "El diagrama no existe"}, status=404)
+        zip = flutter(Diagrama.id)
+        response = HttpResponse(zip, content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename=flutter_app.zip'
+        return response

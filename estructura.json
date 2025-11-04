@@ -1,0 +1,297 @@
+{
+  "estructura": {
+    "diagrama": {
+      "id": 4,
+      "nombre": "modelo1"
+    },
+    "tablas": {
+      "40": {
+        "id": 40,
+        "nombre": "cliente",
+        "pk": [
+          {
+            "id": 62,
+            "nombre": "clienteid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": null,
+            "tabla_padre": null
+          }
+        ],
+        "atributos": [
+          {
+            "id": 63,
+            "nombre": "nombre",
+            "tipo_dato": "char",
+            "is_nullable": false,
+            "rango": "100",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": false,
+            "atributo_padre": null,
+            "tabla_padre": null
+          },
+          {
+            "id": 64,
+            "nombre": "apellido",
+            "tipo_dato": "char",
+            "is_nullable": false,
+            "rango": "100",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": false,
+            "atributo_padre": null,
+            "tabla_padre": null
+          },
+          {
+            "id": 65,
+            "nombre": "email",
+            "tipo_dato": "char",
+            "is_nullable": false,
+            "rango": "100",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": false,
+            "atributo_padre": null,
+            "tabla_padre": null
+          },
+          {
+            "id": 66,
+            "nombre": "email2",
+            "tipo_dato": "char",
+            "is_nullable": true,
+            "rango": "255",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": false,
+            "atributo_padre": null,
+            "tabla_padre": null
+          }
+        ],
+        "fk": []
+      },
+      "41": {
+        "id": 41,
+        "nombre": "orden",
+        "pk": [
+          {
+            "id": 71,
+            "nombre": "ordenid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": null,
+            "tabla_padre": null
+          }
+        ],
+        "atributos": [
+          {
+            "id": 72,
+            "nombre": "ordenfecha",
+            "tipo_dato": "datetime",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": false,
+            "atributo_padre": null,
+            "tabla_padre": null
+          },
+          {
+            "id": 62,
+            "nombre": "cliente_clienteid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "clienteid",
+            "tabla_padre": "cliente"
+          }
+        ],
+        "fk": [
+          {
+            "id": 62,
+            "nombre": "cliente_clienteid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "clienteid",
+            "tabla_padre": "cliente"
+          }
+        ]
+      },
+      "42": {
+        "id": 42,
+        "nombre": "producto",
+        "pk": [
+          {
+            "id": 68,
+            "nombre": "productoid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": null,
+            "tabla_padre": null
+          }
+        ],
+        "atributos": [
+          {
+            "id": 69,
+            "nombre": "productonombre",
+            "tipo_dato": "char",
+            "is_nullable": false,
+            "rango": "100",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": false,
+            "atributo_padre": null,
+            "tabla_padre": null
+          },
+          {
+            "id": 70,
+            "nombre": "precio",
+            "tipo_dato": "decimal",
+            "is_nullable": false,
+            "rango": "10,2",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": true,
+            "atributo_padre": null,
+            "tabla_padre": null
+          },
+          {
+            "id": 67,
+            "nombre": "catrgoria_categoriaid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "categoriaid",
+            "tabla_padre": "catrgoria"
+          }
+        ],
+        "fk": [
+          {
+            "id": 67,
+            "nombre": "catrgoria_categoriaid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "categoriaid",
+            "tabla_padre": "catrgoria"
+          }
+        ]
+      },
+      "43": {
+        "id": 43,
+        "nombre": "catrgoria",
+        "pk": [
+          {
+            "id": 67,
+            "nombre": "categoriaid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": null,
+            "tabla_padre": null
+          }
+        ],
+        "atributos": [],
+        "fk": []
+      },
+      "44": {
+        "id": 44,
+        "nombre": "orden_detalle",
+        "pk": [
+          {
+            "id": 71,
+            "nombre": "orden_ordenid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "ordenid",
+            "tabla_padre": "orden"
+          },
+          {
+            "id": 68,
+            "nombre": "producto_productoid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "productoid",
+            "tabla_padre": "producto"
+          }
+        ],
+        "atributos": [
+          {
+            "id": 73,
+            "nombre": "cantidad",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": false,
+            "auto_increment": false,
+            "solo_positivo": true,
+            "atributo_padre": null,
+            "tabla_padre": null
+          }
+        ],
+        "fk": [
+          {
+            "id": 71,
+            "nombre": "orden_ordenid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "ordenid",
+            "tabla_padre": "orden"
+          },
+          {
+            "id": 68,
+            "nombre": "producto_productoid",
+            "tipo_dato": "integer",
+            "is_nullable": false,
+            "rango": "",
+            "primary_key": true,
+            "auto_increment": true,
+            "solo_positivo": true,
+            "atributo_padre": "productoid",
+            "tabla_padre": "producto"
+          }
+        ]
+      }
+    }
+  }
+}

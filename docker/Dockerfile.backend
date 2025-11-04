@@ -3,13 +3,13 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Instalar dependencias del sistema
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    build-essential \
-    wget \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
+# # Instalar dependencias del sistema
+# RUN apt-get update && apt-get install -y \
+#     ffmpeg \
+#     build-essential \
+#     wget \
+#     unzip \
+#     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -20,10 +20,10 @@ COPY ./docker/requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Descargar modelo Vosk
-RUN wget https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip && \
-    unzip vosk-model-small-es-0.42.zip && \
-    rm vosk-model-small-es-0.42.zip
+# # Descargar modelo Vosk
+# RUN wget https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip && \
+#     unzip vosk-model-small-es-0.42.zip && \
+#     rm vosk-model-small-es-0.42.zip
 
 # Copiar todo el proyecto
 COPY . .
