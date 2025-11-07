@@ -16,27 +16,27 @@ class OrdenService {
         List<dynamic> jsonList = json.decode(response.body);
         return jsonList.map((json) => Orden.fromJson(json)).toList();
       } else {
-        throw Exception('Error al cargar datos: \${response.statusCode}');
+        throw Exception('Error al cargar datos: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<Orden> getById(int id) async {
     try {
       final response = await http.get(
-        Uri.parse('\$baseUrl/\$id'),
+        Uri.parse('$baseUrl/$id'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         return Orden.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Error: \${response.statusCode}');
+        throw Exception('Error: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
@@ -51,17 +51,17 @@ class OrdenService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return Orden.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Error al crear: \${response.statusCode}');
+        throw Exception('Error al crear: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<Orden> update(int id, Orden orden) async {
     try {
       final response = await http.put(
-        Uri.parse('\$baseUrl/\$id'),
+        Uri.parse('$baseUrl/$id'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(orden.toJson()),
       );
@@ -69,25 +69,25 @@ class OrdenService {
       if (response.statusCode == 200) {
         return Orden.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Error al actualizar: \${response.statusCode}');
+        throw Exception('Error al actualizar: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<void> delete(int id) async {
     try {
       final response = await http.delete(
-        Uri.parse('\$baseUrl/\$id'),
+        Uri.parse('$baseUrl/$id'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode != 204 && response.statusCode != 200) {
-        throw Exception('Error al eliminar: \${response.statusCode}');
+        throw Exception('Error al eliminar: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 }

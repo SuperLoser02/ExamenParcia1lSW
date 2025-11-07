@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/orden_detalle_model.dart';
 import '../services/orden_detalle_service.dart';
+import '../models/orden_model.dart';
+import '../services/orden_service.dart';
+import '../models/producto_model.dart';
+import '../services/producto_service.dart';
 
 class Orden_detalleScreen extends StatefulWidget {
-  const Orden_detalleScreen({Key? key}) : super(key: key);
+  const Orden_detalleScreen({super.key});
 
   @override
   State<Orden_detalleScreen> createState() => _Orden_detalleScreenState();
@@ -53,7 +57,7 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -65,23 +69,29 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
       builder: (context) => Orden_detalleFormDialog(
         item: item,
         onSave: (Orden_detalle newItem) async {
+          final parentContext = context;
           try {
             if (item == null) {
               await _service.create(newItem);
             } else {
-              await _service.update(item.ordenid!, item.productoid!, newItem);
+               if (newItem.ordenid != item.ordenid || newItem.productoid != item.productoid) {
+                 await _service.delete(item.ordenid!, item.productoid!);
+                 await _service.create(newItem);
+               } else {
+                 await _service.update(item.ordenid!, item.productoid!, newItem);
+               }
             }
             _loadItems();
             if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado' : 'Actualizado')),
+              Navigator.pop(parentContext);
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
               );
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -94,14 +104,16 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Detalles'),
+        title: const Text('Detalles de Orden_detalle'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ordenid: \${item.ordenid}'),
-            Text('Productoid: \${item.productoid}'),
-            Text('Cantidad: \${item.cantidad}'),
+            Text('Ordenid: ${item.ordenid}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Productoid: ${item.productoid}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Cantidad: ${item.cantidad}'),
           ],
         ),
         actions: [
@@ -123,16 +135,41 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      Text(_error!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadItems,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
               : _items.isEmpty
-                  ? const Center(child: Text('No hay datos'))
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox, size: 60, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No hay Orden_detalle', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
                         final item = _items[index];
                         return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: ListTile(
-                            title: Text('\${item.cantidad}'),
+                            title: Text('Orden: ${item.ordenid} - Producto: ${item.productoid}'),
+                                subtitle: Text('Orden: ${item.ordenid} - Producto: ${item.productoid}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -150,14 +187,17 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
                                     showDialog(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title: const Text('Confirmar'),
-                                        content: const Text('¿Eliminar?'),
+                                        title: const Text('Confirmar eliminación'),
+                                        content: const Text('¿Está seguro de eliminar este elemento?'),
                                         actions: [
                                           TextButton(
                                             onPressed: () => Navigator.pop(ctx),
                                             child: const Text('Cancelar'),
                                           ),
-                                          TextButton(
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
                                             onPressed: () {
                                               Navigator.pop(ctx);
                                               _deleteItem(item.ordenid!, item.productoid!);
@@ -187,7 +227,7 @@ class Orden_detalleFormDialog extends StatefulWidget {
   final Orden_detalle? item;
   final Function(Orden_detalle) onSave;
 
-  const Orden_detalleFormDialog({Key? key, this.item, required this.onSave}) : super(key: key);
+  const Orden_detalleFormDialog({super.key, this.item, required this.onSave});
 
   @override
   State<Orden_detalleFormDialog> createState() => _Orden_detalleFormDialogState();
@@ -195,12 +235,65 @@ class Orden_detalleFormDialog extends StatefulWidget {
 
 class _Orden_detalleFormDialogState extends State<Orden_detalleFormDialog> {
   final _formKey = GlobalKey<FormState>();
+  final OrdenService _ordenService = OrdenService();
+  final ProductoService _productoService = ProductoService();
+  List<Orden> _ordenList = [];
+  Orden? _selectedOrden;
+  List<Producto> _productoList = [];
+  Producto? _selectedProducto;
   late TextEditingController _cantidadController;
+bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    _cantidadController = TextEditingController(text: widget.item?.cantidad?.toString() ?? '');
+    _cantidadController = TextEditingController(
+      text: widget.item != null ? widget.item!.cantidad.toString() : ''
+    );
+    _loadOrden();
+    _loadProducto();
+  }
+
+  Future<void> _loadOrden() async {
+    try {
+      final service = OrdenService();
+      final items = await service.getAll();
+      if (mounted) {
+        setState(() {
+          _ordenList = items;
+          if (widget.item?.ordenid != null) {
+            // Buscar el objeto completo basado en el ID
+            _selectedOrden = items.firstWhere(
+              (e) => e.ordenid == widget.item?.ordenid,
+              orElse: () => items.first,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      // Error loading data
+    }
+  }
+
+  Future<void> _loadProducto() async {
+    try {
+      final service = ProductoService();
+      final items = await service.getAll();
+      if (mounted) {
+        setState(() {
+          _productoList = items;
+          if (widget.item?.productoid != null) {
+            // Buscar el objeto completo basado en el ID
+            _selectedProducto = items.firstWhere(
+              (e) => e.productoid == widget.item?.productoid,
+              orElse: () => items.first,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      // Error loading data
+    }
   }
 
   @override
@@ -219,9 +312,43 @@ class _Orden_detalleFormDialogState extends State<Orden_detalleFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              DropdownButtonFormField<Orden>(
+                value: _selectedOrden,
+                decoration: const InputDecoration(labelText: 'Orden_ordenid'),
+                items: _ordenList.map((item) {
+                  return DropdownMenuItem(
+                    value: item,
+                    child: Text('ID: ${item.ordenid}'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedOrden = value;
+                  });
+                },
+                validator: (v) => v == null ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Producto>(
+                value: _selectedProducto,
+                decoration: const InputDecoration(labelText: 'Producto_productoid'),
+                items: _productoList.map((item) {
+                  return DropdownMenuItem(
+                    value: item,
+                    child: Text('${item.productonombre}'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedProducto = value;
+                  });
+                },
+                validator: (v) => v == null ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _cantidadController,
-                decoration: InputDecoration(labelText: 'Cantidad'),
+                decoration: const InputDecoration(labelText: 'Cantidad'),
                 keyboardType: TextInputType.number,
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
@@ -239,9 +366,9 @@ class _Orden_detalleFormDialogState extends State<Orden_detalleFormDialog> {
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               widget.onSave(Orden_detalle(
-                ordenid: widget.item?.ordenid,
-                productoid: widget.item?.productoid,
-                cantidad: int.tryParse(_cantidadController.text),
+                ordenid: _selectedOrden?.ordenid,
+                productoid: _selectedProducto?.productoid,
+                cantidad: int.parse(_cantidadController.text),
               ));
             }
           },

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'screens/ClienteScreen.dart';
-import 'screens/CatrgoriaScreen.dart';
-import 'screens/OrdenScreen.dart';
-import 'screens/ProductoScreen.dart';
-import 'screens/Orden_detalleScreen.dart';
+import 'screens/cliente_screen.dart';
+import 'screens/catrgoria_screen.dart';
+import 'screens/orden_screen.dart';
+import 'screens/producto_screen.dart';
+import 'screens/orden_detalle_screen.dart';
 
 void main() {
   runApp(const MyApp());

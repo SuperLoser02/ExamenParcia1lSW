@@ -16,27 +16,27 @@ class Orden_detalleService {
         List<dynamic> jsonList = json.decode(response.body);
         return jsonList.map((json) => Orden_detalle.fromJson(json)).toList();
       } else {
-        throw Exception('Error al cargar datos: \${response.statusCode}');
+        throw Exception('Error al cargar datos: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<Orden_detalle> getById(int ordenid, int productoid) async {
     try {
       final response = await http.get(
-        Uri.parse('\$baseUrl/\${ordenid}/\${productoid}'),
+        Uri.parse('$baseUrl/${ordenid}/${productoid}'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         return Orden_detalle.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Error: \${response.statusCode}');
+        throw Exception('Error: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
@@ -51,17 +51,17 @@ class Orden_detalleService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return Orden_detalle.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Error al crear: \${response.statusCode}');
+        throw Exception('Error al crear: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<Orden_detalle> update(int ordenid, int productoid, Orden_detalle orden_detalle) async {
     try {
       final response = await http.put(
-        Uri.parse('\$baseUrl/\${ordenid}/\${productoid}'),
+        Uri.parse('$baseUrl/${ordenid}/${productoid}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(orden_detalle.toJson()),
       );
@@ -69,25 +69,25 @@ class Orden_detalleService {
       if (response.statusCode == 200) {
         return Orden_detalle.fromJson(json.decode(response.body));
       } else {
-        throw Exception('Error al actualizar: \${response.statusCode}');
+        throw Exception('Error al actualizar: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<void> delete(int ordenid, int productoid) async {
     try {
       final response = await http.delete(
-        Uri.parse('\$baseUrl/\${ordenid}/\${productoid}'),
+        Uri.parse('$baseUrl/${ordenid}/${productoid}'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode != 204 && response.statusCode != 200) {
-        throw Exception('Error al eliminar: \${response.statusCode}');
+        throw Exception('Error al eliminar: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Error de conexión: \$e');
+      throw Exception('Error de conexión: $e');
     }
   }
 }

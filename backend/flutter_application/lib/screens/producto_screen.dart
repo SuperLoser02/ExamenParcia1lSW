@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/orden_model.dart';
-import '../services/orden_service.dart';
-import '../models/cliente_model.dart';
-import '../services/cliente_service.dart';
+import '../models/producto_model.dart';
+import '../services/producto_service.dart';
+import '../models/catrgoria_model.dart';
+import '../services/catrgoria_service.dart';
 
-class OrdenScreen extends StatefulWidget {
-  const OrdenScreen({Key? key}) : super(key: key);
+class ProductoScreen extends StatefulWidget {
+  const ProductoScreen({super.key});
 
   @override
-  State<OrdenScreen> createState() => _OrdenScreenState();
+  State<ProductoScreen> createState() => _ProductoScreenState();
 }
 
-class _OrdenScreenState extends State<OrdenScreen> {
-  final OrdenService _service = OrdenService();
-  List<Orden> _items = [];
+class _ProductoScreenState extends State<ProductoScreen> {
+  final ProductoService _service = ProductoService();
+  List<Producto> _items = [];
   bool _isLoading = true;
   String? _error;
 
@@ -55,35 +55,36 @@ class _OrdenScreenState extends State<OrdenScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  void _showFormDialog({Orden? item}) {
+  void _showFormDialog({Producto? item}) {
     showDialog(
       context: context,
-      builder: (context) => OrdenFormDialog(
+      builder: (context) => ProductoFormDialog(
         item: item,
-        onSave: (Orden newItem) async {
+        onSave: (Producto newItem) async {
+          final parentContext = context;
           try {
             if (item == null) {
               await _service.create(newItem);
             } else {
-              await _service.update(item.ordenid!, newItem);
+              await _service.update(item.productoid!, newItem);
             }
             _loadItems();
             if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado' : 'Actualizado')),
+              Navigator.pop(parentContext);
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
               );
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -92,18 +93,20 @@ class _OrdenScreenState extends State<OrdenScreen> {
     );
   }
 
-  void _showDetails(Orden item) {
+  void _showDetails(Producto item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Detalles'),
+        title: const Text('Detalles de Producto'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Ordenid: \${item.ordenid}'),
-            Text('Ordenfecha: \${item.ordenfecha}'),
-            Text('Cliente_clienteid: \${item.cliente?.toString() ?? "N/A"}'),
+            Text('Productoid: ${item.productoid}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Productonombre: ${item.productonombre}'),
+            Text('Precio: ${item.precio}'),
+            Text('Catrgoria_categoriaid: ${item.catrgoria?.toString() ?? "N/A"}'),
           ],
         ),
         actions: [
@@ -117,7 +120,7 @@ class _OrdenScreenState extends State<OrdenScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Orden'),
+        title: const Text('Producto'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadItems),
         ],
@@ -125,16 +128,41 @@ class _OrdenScreenState extends State<OrdenScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      Text(_error!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadItems,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
               : _items.isEmpty
-                  ? const Center(child: Text('No hay datos'))
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox, size: 60, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No hay Producto', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
                         final item = _items[index];
                         return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: ListTile(
-                            title: Text('\${item.ordenfecha}'),
+                            title: Text('ID: ${item.productoid}'),
+                                subtitle: Text('productonombre'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -152,17 +180,20 @@ class _OrdenScreenState extends State<OrdenScreen> {
                                     showDialog(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title: const Text('Confirmar'),
-                                        content: const Text('¿Eliminar?'),
+                                        title: const Text('Confirmar eliminación'),
+                                        content: const Text('¿Está seguro de eliminar este elemento?'),
                                         actions: [
                                           TextButton(
                                             onPressed: () => Navigator.pop(ctx),
                                             child: const Text('Cancelar'),
                                           ),
-                                          TextButton(
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
                                             onPressed: () {
                                               Navigator.pop(ctx);
-                                              _deleteItem(item.ordenid!);
+                                              _deleteItem(item.productoid!);
                                             },
                                             child: const Text('Eliminar'),
                                           ),
@@ -185,47 +216,57 @@ class _OrdenScreenState extends State<OrdenScreen> {
   }
 }
 
-class OrdenFormDialog extends StatefulWidget {
-  final Orden? item;
-  final Function(Orden) onSave;
+class ProductoFormDialog extends StatefulWidget {
+  final Producto? item;
+  final Function(Producto) onSave;
 
-  const OrdenFormDialog({Key? key, this.item, required this.onSave}) : super(key: key);
+  const ProductoFormDialog({super.key, this.item, required this.onSave});
 
   @override
-  State<OrdenFormDialog> createState() => _OrdenFormDialogState();
+  State<ProductoFormDialog> createState() => _ProductoFormDialogState();
 }
 
-class _OrdenFormDialogState extends State<OrdenFormDialog> {
+class _ProductoFormDialogState extends State<ProductoFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _ordenfechaController;
-  List<Cliente> _clienteList = [];
-  Cliente? _selectedCliente;
+  late TextEditingController _productonombreController;
+  late TextEditingController _precioController;
+  List<Catrgoria> _catrgoriaList = [];
+  Catrgoria? _selectedCatrgoria;
+bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    _ordenfechaController = TextEditingController(text: widget.item?.ordenfecha?.toString() ?? '');
-    _loadCliente();
+    _productonombreController = TextEditingController(
+      text: widget.item != null ? widget.item!.productonombre.toString() : ''
+    );
+    _precioController = TextEditingController(
+      text: widget.item != null ? widget.item!.precio.toString() : ''
+    );
+    _loadCatrgoria();
   }
 
-  Future<void> _loadCliente() async {
+  Future<void> _loadCatrgoria() async {
     try {
-      final service = ClienteService();
+      final service = CatrgoriaService();
       final items = await service.getAll();
-      setState(() {
-        _clienteList = items;
-        if (widget.item?.cliente != null) {
-          _selectedCliente = widget.item!.cliente;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _catrgoriaList = items;
+          if (widget.item?.catrgoria != null) {
+            _selectedCatrgoria = widget.item!.catrgoria;
+          }
+        });
+      }
     } catch (e) {
-      print('Error loading cliente: \$e');
+      // Error loading data
     }
   }
 
   @override
   void dispose() {
-    _ordenfechaController.dispose();
+    _productonombreController.dispose();
+    _precioController.dispose();
     super.dispose();
   }
 
@@ -240,24 +281,30 @@ class _OrdenFormDialogState extends State<OrdenFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _ordenfechaController,
-                decoration: InputDecoration(labelText: 'Ordenfecha'),
-                keyboardType: TextInputType.datetime,
+                controller: _productonombreController,
+                decoration: const InputDecoration(labelText: 'Productonombre'),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<Cliente>(
-                value: _selectedCliente,
-                decoration: InputDecoration(labelText: 'Cliente_clienteid'),
-                items: _clienteList.map((item) {
+              TextFormField(
+                controller: _precioController,
+                decoration: const InputDecoration(labelText: 'Precio'),
+                keyboardType: TextInputType.number,
+                validator: (v) => v!.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Catrgoria>(
+                value: _selectedCatrgoria,
+                decoration: const InputDecoration(labelText: 'Catrgoria_categoriaid'),
+                items: _catrgoriaList.map((item) {
                   return DropdownMenuItem(
                     value: item,
-                    child: Text('\${item.nombre}'),
+                    child: Text('ID: ${item.categoriaid}'),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
-                    _selectedCliente = value;
+                    _selectedCatrgoria = value;
                   });
                 },
                 validator: (v) => v == null ? 'Requerido' : null,
@@ -275,10 +322,11 @@ class _OrdenFormDialogState extends State<OrdenFormDialog> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              widget.onSave(Orden(
-                ordenid: widget.item?.ordenid,
-                ordenfecha: _ordenfechaController.text,
-                cliente: _selectedCliente,
+              widget.onSave(Producto(
+                productoid: widget.item?.productoid,
+                productonombre: _productonombreController.text,
+                precio: double.parse(_precioController.text.replaceAll(',', '.')),
+                catrgoria: _selectedCatrgoria!,
               ));
             }
           },

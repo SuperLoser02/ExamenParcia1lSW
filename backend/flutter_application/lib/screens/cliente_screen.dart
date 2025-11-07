@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
-import '../models/producto_model.dart';
-import '../services/producto_service.dart';
-import '../models/catrgoria_model.dart';
-import '../services/catrgoria_service.dart';
+import '../models/cliente_model.dart';
+import '../services/cliente_service.dart';
 
-class ProductoScreen extends StatefulWidget {
-  const ProductoScreen({Key? key}) : super(key: key);
+class ClienteScreen extends StatefulWidget {
+  const ClienteScreen({super.key});
 
   @override
-  State<ProductoScreen> createState() => _ProductoScreenState();
+  State<ClienteScreen> createState() => _ClienteScreenState();
 }
 
-class _ProductoScreenState extends State<ProductoScreen> {
-  final ProductoService _service = ProductoService();
-  List<Producto> _items = [];
+class _ClienteScreenState extends State<ClienteScreen> {
+  final ClienteService _service = ClienteService();
+  List<Cliente> _items = [];
   bool _isLoading = true;
   String? _error;
 
@@ -55,35 +53,36 @@ class _ProductoScreenState extends State<ProductoScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  void _showFormDialog({Producto? item}) {
+  void _showFormDialog({Cliente? item}) {
     showDialog(
       context: context,
-      builder: (context) => ProductoFormDialog(
+      builder: (context) => ClienteFormDialog(
         item: item,
-        onSave: (Producto newItem) async {
+        onSave: (Cliente newItem) async {
+          final parentContext = context;
           try {
             if (item == null) {
               await _service.create(newItem);
             } else {
-              await _service.update(item.productoid!, newItem);
+              await _service.update(item.clienteid!, newItem);
             }
             _loadItems();
             if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado' : 'Actualizado')),
+              Navigator.pop(parentContext);
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
               );
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -92,19 +91,21 @@ class _ProductoScreenState extends State<ProductoScreen> {
     );
   }
 
-  void _showDetails(Producto item) {
+  void _showDetails(Cliente item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Detalles'),
+        title: const Text('Detalles de Cliente'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Productoid: \${item.productoid}'),
-            Text('Productonombre: \${item.productonombre}'),
-            Text('Precio: \${item.precio}'),
-            Text('Catrgoria_categoriaid: \${item.catrgoria?.toString() ?? "N/A"}'),
+            Text('Clienteid: ${item.clienteid}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Nombre: ${item.nombre}'),
+            Text('Apellido: ${item.apellido}'),
+            Text('Email: ${item.email}'),
+            Text('Email2: ${item.email2}'),
           ],
         ),
         actions: [
@@ -118,7 +119,7 @@ class _ProductoScreenState extends State<ProductoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Producto'),
+        title: const Text('Cliente'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadItems),
         ],
@@ -126,16 +127,41 @@ class _ProductoScreenState extends State<ProductoScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      Text(_error!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadItems,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
               : _items.isEmpty
-                  ? const Center(child: Text('No hay datos'))
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox, size: 60, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No hay Cliente', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
                         final item = _items[index];
                         return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: ListTile(
-                            title: Text('\${item.productonombre}'),
+                            title: Text('ID: ${item.clienteid}'),
+                                subtitle: Text('nombre'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -153,17 +179,20 @@ class _ProductoScreenState extends State<ProductoScreen> {
                                     showDialog(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title: const Text('Confirmar'),
-                                        content: const Text('¿Eliminar?'),
+                                        title: const Text('Confirmar eliminación'),
+                                        content: const Text('¿Está seguro de eliminar este elemento?'),
                                         actions: [
                                           TextButton(
                                             onPressed: () => Navigator.pop(ctx),
                                             child: const Text('Cancelar'),
                                           ),
-                                          TextButton(
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
                                             onPressed: () {
                                               Navigator.pop(ctx);
-                                              _deleteItem(item.productoid!);
+                                              _deleteItem(item.clienteid!);
                                             },
                                             child: const Text('Eliminar'),
                                           ),
@@ -186,50 +215,47 @@ class _ProductoScreenState extends State<ProductoScreen> {
   }
 }
 
-class ProductoFormDialog extends StatefulWidget {
-  final Producto? item;
-  final Function(Producto) onSave;
+class ClienteFormDialog extends StatefulWidget {
+  final Cliente? item;
+  final Function(Cliente) onSave;
 
-  const ProductoFormDialog({Key? key, this.item, required this.onSave}) : super(key: key);
+  const ClienteFormDialog({super.key, this.item, required this.onSave});
 
   @override
-  State<ProductoFormDialog> createState() => _ProductoFormDialogState();
+  State<ClienteFormDialog> createState() => _ClienteFormDialogState();
 }
 
-class _ProductoFormDialogState extends State<ProductoFormDialog> {
+class _ClienteFormDialogState extends State<ClienteFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _productonombreController;
-  late TextEditingController _precioController;
-  List<Catrgoria> _catrgoriaList = [];
-  Catrgoria? _selectedCatrgoria;
+  late TextEditingController _nombreController;
+  late TextEditingController _apellidoController;
+  late TextEditingController _emailController;
+  late TextEditingController _email2Controller;
+bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    _productonombreController = TextEditingController(text: widget.item?.productonombre?.toString() ?? '');
-    _precioController = TextEditingController(text: widget.item?.precio?.toString() ?? '');
-    _loadCatrgoria();
-  }
-
-  Future<void> _loadCatrgoria() async {
-    try {
-      final service = CatrgoriaService();
-      final items = await service.getAll();
-      setState(() {
-        _catrgoriaList = items;
-        if (widget.item?.catrgoria != null) {
-          _selectedCatrgoria = widget.item!.catrgoria;
-        }
-      });
-    } catch (e) {
-      print('Error loading catrgoria: \$e');
-    }
+    _nombreController = TextEditingController(
+      text: widget.item != null ? widget.item!.nombre.toString() : ''
+    );
+    _apellidoController = TextEditingController(
+      text: widget.item != null ? widget.item!.apellido.toString() : ''
+    );
+    _emailController = TextEditingController(
+      text: widget.item != null ? widget.item!.email.toString() : ''
+    );
+    _email2Controller = TextEditingController(
+      text: widget.item?.email2 != null ? widget.item!.email2.toString() : ''
+    );
   }
 
   @override
   void dispose() {
-    _productonombreController.dispose();
-    _precioController.dispose();
+    _nombreController.dispose();
+    _apellidoController.dispose();
+    _emailController.dispose();
+    _email2Controller.dispose();
     super.dispose();
   }
 
@@ -244,33 +270,26 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _productonombreController,
-                decoration: InputDecoration(labelText: 'Productonombre'),
+                controller: _nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre'),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _precioController,
-                decoration: InputDecoration(labelText: 'Precio'),
-                keyboardType: TextInputType.number,
+                controller: _apellidoController,
+                decoration: const InputDecoration(labelText: 'Apellido'),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<Catrgoria>(
-                value: _selectedCatrgoria,
-                decoration: InputDecoration(labelText: 'Catrgoria_categoriaid'),
-                items: _catrgoriaList.map((item) {
-                  return DropdownMenuItem(
-                    value: item,
-                    child: Text('ID: \${item.categoriaid}'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCatrgoria = value;
-                  });
-                },
-                validator: (v) => v == null ? 'Requerido' : null,
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                validator: (v) => v!.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _email2Controller,
+                decoration: const InputDecoration(labelText: 'Email2'),
               ),
               const SizedBox(height: 12),
             ],
@@ -285,11 +304,12 @@ class _ProductoFormDialogState extends State<ProductoFormDialog> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              widget.onSave(Producto(
-                productoid: widget.item?.productoid,
-                productonombre: _productonombreController.text,
-                precio: double.tryParse(_precioController.text),
-                catrgoria: _selectedCatrgoria,
+              widget.onSave(Cliente(
+                clienteid: widget.item?.clienteid,
+                nombre: _nombreController.text,
+                apellido: _apellidoController.text,
+                email: _emailController.text,
+                email2: _email2Controller.text.isEmpty ? null : _email2Controller.text,
               ));
             }
           },

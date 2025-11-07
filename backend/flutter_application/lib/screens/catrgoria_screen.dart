@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../models/cliente_model.dart';
-import '../services/cliente_service.dart';
+import '../models/catrgoria_model.dart';
+import '../services/catrgoria_service.dart';
 
-class ClienteScreen extends StatefulWidget {
-  const ClienteScreen({Key? key}) : super(key: key);
+class CatrgoriaScreen extends StatefulWidget {
+  const CatrgoriaScreen({super.key});
 
   @override
-  State<ClienteScreen> createState() => _ClienteScreenState();
+  State<CatrgoriaScreen> createState() => _CatrgoriaScreenState();
 }
 
-class _ClienteScreenState extends State<ClienteScreen> {
-  final ClienteService _service = ClienteService();
-  List<Cliente> _items = [];
+class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
+  final CatrgoriaService _service = CatrgoriaService();
+  List<Catrgoria> _items = [];
   bool _isLoading = true;
   String? _error;
 
@@ -53,35 +53,36 @@ class _ClienteScreenState extends State<ClienteScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  void _showFormDialog({Cliente? item}) {
+  void _showFormDialog({Catrgoria? item}) {
     showDialog(
       context: context,
-      builder: (context) => ClienteFormDialog(
+      builder: (context) => CatrgoriaFormDialog(
         item: item,
-        onSave: (Cliente newItem) async {
+        onSave: (Catrgoria newItem) async {
+          final parentContext = context;
           try {
             if (item == null) {
               await _service.create(newItem);
             } else {
-              await _service.update(item.clienteid!, newItem);
+              await _service.update(item.categoriaid!, newItem);
             }
             _loadItems();
             if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado' : 'Actualizado')),
+              Navigator.pop(parentContext);
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
               );
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: \$e'), backgroundColor: Colors.red),
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -90,20 +91,17 @@ class _ClienteScreenState extends State<ClienteScreen> {
     );
   }
 
-  void _showDetails(Cliente item) {
+  void _showDetails(Catrgoria item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Detalles'),
+        title: const Text('Detalles de Catrgoria'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Clienteid: \${item.clienteid}'),
-            Text('Nombre: \${item.nombre}'),
-            Text('Apellido: \${item.apellido}'),
-            Text('Email: \${item.email}'),
-            Text('Email2: \${item.email2}'),
+            Text('Categoriaid: ${item.categoriaid}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
           ],
         ),
         actions: [
@@ -117,7 +115,7 @@ class _ClienteScreenState extends State<ClienteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cliente'),
+        title: const Text('Catrgoria'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadItems),
         ],
@@ -125,16 +123,40 @@ class _ClienteScreenState extends State<ClienteScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      Text(_error!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadItems,
+                        child: const Text('Reintentar'),
+                      ),
+                    ],
+                  ),
+                )
               : _items.isEmpty
-                  ? const Center(child: Text('No hay datos'))
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox, size: 60, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No hay Catrgoria', style: TextStyle(fontSize: 16)),
+                        ],
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: _items.length,
                       itemBuilder: (context, index) {
                         final item = _items[index];
                         return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: ListTile(
-                            title: Text('\${item.nombre}'),
+                            title: Text('ID: ${item.categoriaid}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -152,17 +174,20 @@ class _ClienteScreenState extends State<ClienteScreen> {
                                     showDialog(
                                       context: context,
                                       builder: (ctx) => AlertDialog(
-                                        title: const Text('Confirmar'),
-                                        content: const Text('¿Eliminar?'),
+                                        title: const Text('Confirmar eliminación'),
+                                        content: const Text('¿Está seguro de eliminar este elemento?'),
                                         actions: [
                                           TextButton(
                                             onPressed: () => Navigator.pop(ctx),
                                             child: const Text('Cancelar'),
                                           ),
-                                          TextButton(
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
                                             onPressed: () {
                                               Navigator.pop(ctx);
-                                              _deleteItem(item.clienteid!);
+                                              _deleteItem(item.categoriaid!);
                                             },
                                             child: const Text('Eliminar'),
                                           ),
@@ -185,38 +210,27 @@ class _ClienteScreenState extends State<ClienteScreen> {
   }
 }
 
-class ClienteFormDialog extends StatefulWidget {
-  final Cliente? item;
-  final Function(Cliente) onSave;
+class CatrgoriaFormDialog extends StatefulWidget {
+  final Catrgoria? item;
+  final Function(Catrgoria) onSave;
 
-  const ClienteFormDialog({Key? key, this.item, required this.onSave}) : super(key: key);
+  const CatrgoriaFormDialog({super.key, this.item, required this.onSave});
 
   @override
-  State<ClienteFormDialog> createState() => _ClienteFormDialogState();
+  State<CatrgoriaFormDialog> createState() => _CatrgoriaFormDialogState();
 }
 
-class _ClienteFormDialogState extends State<ClienteFormDialog> {
+class _CatrgoriaFormDialogState extends State<CatrgoriaFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nombreController;
-  late TextEditingController _apellidoController;
-  late TextEditingController _emailController;
-  late TextEditingController _email2Controller;
+bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    _nombreController = TextEditingController(text: widget.item?.nombre?.toString() ?? '');
-    _apellidoController = TextEditingController(text: widget.item?.apellido?.toString() ?? '');
-    _emailController = TextEditingController(text: widget.item?.email?.toString() ?? '');
-    _email2Controller = TextEditingController(text: widget.item?.email2?.toString() ?? '');
   }
 
   @override
   void dispose() {
-    _nombreController.dispose();
-    _apellidoController.dispose();
-    _emailController.dispose();
-    _email2Controller.dispose();
     super.dispose();
   }
 
@@ -230,29 +244,6 @@ class _ClienteFormDialogState extends State<ClienteFormDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: _nombreController,
-                decoration: InputDecoration(labelText: 'Nombre'),
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _apellidoController,
-                decoration: InputDecoration(labelText: 'Apellido'),
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _email2Controller,
-                decoration: InputDecoration(labelText: 'Email2'),
-              ),
-              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -265,12 +256,8 @@ class _ClienteFormDialogState extends State<ClienteFormDialog> {
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              widget.onSave(Cliente(
-                clienteid: widget.item?.clienteid,
-                nombre: _nombreController.text,
-                apellido: _apellidoController.text,
-                email: _emailController.text,
-                email2: _email2Controller.text,
+              widget.onSave(Catrgoria(
+                categoriaid: widget.item?.categoriaid,
               ));
             }
           },
