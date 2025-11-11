@@ -192,12 +192,12 @@ def generar_modelo_dart(tabla, base_models):
                     atributo = pk['atributo_padre']
                     if pk['is_nullable']:
                         f.write(f"      '{pk.get('tabla_padre')}: {{\n")
-                        f.write(f"        '{atributo}': {pk.get('tabla_padre').lower()} != null ? {pk.get('tabla_padre').lower()}.{atributo} : null,\n")
+                        f.write(f"        '{atributo}': {atributo} != null {atributo} : null,\n")
                         f.write("      },\n")
                         #f.write(f"      '{atributo}': {atributo} != null ? {atributo} : null,\n")
                     else:
-                        f.write(f"      '{pk.get('tabla_padre')}: {{\n")
-                        f.write(f"        '{atributo}': {pk.get('tabla_padre').lower()}.{atributo},\n")
+                        f.write(f"      '{pk.get('tabla_padre')}': {{\n")
+                        f.write(f"        '{atributo}': {atributo},\n")
                         f.write("      },\n")
         else:
             if tabla['pk']:
@@ -210,10 +210,12 @@ def generar_modelo_dart(tabla, base_models):
             
             if es_fk:
                 # Para FKs, enviamos solo el ID
+                f.write(f"      '{pk['nombre'].lower()}' : {{\n")
                 if atributo.get('is_nullable', False):
-                    f.write(f"      '{nombre_campo}': {atributo['tabla_padre'].lower()}?.{atributo['atributo_padre'].lower()},\n")
+                    f.write(f"        '{atributo['tabla_padre'].lower()}': {atributo['tabla_padre'].lower()}?.{atributo['atributo_padre'].lower()},\n")
                 else:
-                    f.write(f"      '{nombre_campo}': {atributo['tabla_padre'].lower()}.{atributo['atributo_padre'].lower()},\n")
+                    f.write(f"        '{atributo['tabla_padre'].lower()}': {atributo['tabla_padre'].lower()}.{atributo['atributo_padre'].lower()},\n")
+                f.write("      },\n")
             elif atributo['tipo_dato'] in ['date', 'datetime']:
                 if atributo.get('is_nullable', False):
                     f.write(f"      '{nombre_campo}': {nombre_campo}?.toIso8601String(),\n")
@@ -571,7 +573,7 @@ def generar_screen_dart(tabla, base_screens, todas_tablas):
         
         f.write("    try {\n")
         f.write(f"      await _service.delete({args});\n")
-        f.write("      _loadItems();\n")
+        f.write("      await _loadItems();\n")
         f.write("      if (mounted) {\n")
         f.write("        ScaffoldMessenger.of(context).showSnackBar(\n")
         f.write("          const SnackBar(content: Text('Eliminado correctamente'), backgroundColor: Colors.green),\n")
@@ -603,8 +605,8 @@ def generar_screen_dart(tabla, base_screens, todas_tablas):
             update_args = ' || '.join([f"newItem.{pk['atributo_padre'].lower()} != item.{pk['atributo_padre'].lower()}" for pk in tabla['pk']])
             f.write(f"               if ({update_args}) {{\n")
             args = ', '.join([f"item.{pk['atributo_padre'].lower()}!" for pk in tabla['pk']])
-            f.write(f"                 await _service.delete({args});\n")
             f.write(f"                 await _service.create(newItem);\n")
+            f.write(f"                 await _service.delete({args});\n")
             f.write("               } else {\n") 
             f.write(f"                 await _service.update({args}, newItem);\n")
             f.write("               }\n")
@@ -614,17 +616,19 @@ def generar_screen_dart(tabla, base_screens, todas_tablas):
             f.write(f"              await _service.update(item.{pk_name}!, newItem);\n")
         
         f.write("            }\n")
-        f.write("            _loadItems();\n")
+        f.write("            await _loadItems();\n")
         f.write("            if (mounted) {\n")
         f.write("              Navigator.pop(parentContext);\n")
         f.write("              ScaffoldMessenger.of(parentContext).showSnackBar(\n")
-        f.write("                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),\n")
+        f.write("                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado'),\n")
+        f.write("                backgroundColor: Colors.green\n")
+        f.write("                ),\n")
         f.write("              );\n")
         f.write("            }\n")
         f.write("          } catch (e) {\n")
         f.write("            if (mounted) {\n")
         f.write("              ScaffoldMessenger.of(parentContext).showSnackBar(\n")
-        f.write("                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),\n")
+        f.write("                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),\n")
         f.write("              );\n")
         f.write("            }\n")
         f.write("          }\n")
@@ -862,7 +866,7 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
             tabla_padre_cap = atributo['tabla_padre'].capitalize()
             f.write(f"  List<{tabla_padre_cap}> _{atributo['tabla_padre'].lower()}List = [];\n")
             f.write(f"  {tabla_padre_cap}? _selected{tabla_padre_cap};\n")
-    f.write("bool _isLoadingData = true;\n")
+    f.write("  bool _isLoadingData = true;\n")
     
     f.write("\n  @override\n")
     f.write("  void initState() {\n")
@@ -901,10 +905,14 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
                     f.write(f"      text: widget.item != null ? widget.item!.{nombre_campo}.toString() : ''\n")
                     f.write(f"    );\n")
     
-    # Cargar datos de FKs
+    f.write("    _loadData();\n")
+    f.write("  }\n\n")
+    f.write("  Future<void> _loadData() async {\n")
+    f.write("    await Future.wait([\n")
     for atributo in tabla['fk']:
-        if atributo.get('tabla_padre'):
-            f.write(f"    _load{atributo['tabla_padre'].capitalize()}();\n")
+        tabla_padre_cap = atributo['tabla_padre'].capitalize()
+        f.write(f"    _load{tabla_padre_cap}();\n")
+    f.write("    ]);\n")
     f.write("  }\n\n")
     
     # Métodos para cargar FKs - ✅ CORREGIDO: Sin print, con mounted
@@ -923,14 +931,19 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
             f.write(f"          if (widget.item?.{pk['atributo_padre'].lower()} != null) {{\n")
             f.write(f"            // Buscar el objeto completo basado en el ID\n")
             f.write(f"            _selected{tabla_padre_cap} = items.firstWhere(\n")
-            f.write(f"              (e) => e.{pk['atributo_padre'].lower()} == widget.item?.{pk['atributo_padre'].lower()},\n")
+            f.write(f"              (cat) => cat.{pk['atributo_padre'].lower()} == widget.item!.{pk['atributo_padre'].lower()},\n")
             f.write(f"              orElse: () => items.first,\n")
             f.write(f"            );\n")
             f.write("          }\n")
+            f.write("          _isLoadingData = false;\n")
             f.write("        });\n")
             f.write("      }\n")
             f.write("    } catch (e) {\n")
-            f.write("      // Error loading data\n")
+            f.write("      if (mounted) {\n")
+            f.write("        setState(() {\n")
+            f.write("          _isLoadingData = false;\n")
+            f.write("        });\n")
+            f.write("      }\n")
             f.write("    }\n")
             f.write("  }\n\n")
     elif tabla['pk'][0]['tabla_padre'] is not None:
@@ -952,7 +965,11 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
         f.write("        });\n")
         f.write("      }\n")
         f.write("    } catch (e) {\n")
-        f.write("      // Error loading data\n")
+        f.write("      if (mounted) {\n")
+        f.write("        setState(() {\n")
+        f.write("          _isLoadingData = false;\n")
+        f.write("        });\n")
+        f.write("      }\n")
         f.write("    }\n")
         f.write("  }\n\n")
         
@@ -969,12 +986,21 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
             f.write("        setState(() {\n")
             f.write(f"          _{tabla_padre_lower}List = items;\n")
             f.write(f"          if (widget.item?.{tabla_padre_lower} != null) {{\n")
-            f.write(f"            _selected{tabla_padre_cap} = widget.item!.{tabla_padre_lower};\n")
+            f.write("             // Buscar el objeto completo basado en el ID\n")
+            f.write(f"            _selected{tabla_padre_cap} = _{tabla_padre_lower}List.firstWhere(\n")
+            f.write(f"              (cat) => cat.{atributo['atributo_padre'].lower()} == widget.item!.{tabla_padre_lower}.{pk['atributo_padre'].lower()},\n")
+            f.write(f"              orElse: () => items.first,\n")
+            f.write(f"            );\n")
             f.write("          }\n")
+            f.write("          _isLodingData = false;\n")
             f.write("        });\n")
             f.write("      }\n")
             f.write("    } catch (e) {\n")
-            f.write("      // Error loading data\n")
+            f.write("      if (mounted) {\n")
+            f.write("        setState(() {\n")
+            f.write("          _isLoadingData = false;\n")
+            f.write("        });\n")
+            f.write("      }\n")
             f.write("    }\n")
             f.write("  }\n\n")
 
@@ -1234,3 +1260,5 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
     f.write("    );\n")
     f.write("  }\n")
     f.write("}\n")
+
+
