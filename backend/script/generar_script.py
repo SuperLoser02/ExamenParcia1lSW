@@ -939,3 +939,29 @@ def spring_boot(diagrama_id):
         # Limpiar temporales
         shutil.rmtree(temp_dir)
         
+def generar_json_backend(diagrama_id):
+    estructura = generar_estructura(diagrama_id)
+    json = ""
+    for _ , tabla in estructura['tablas'].items():
+        nombre_tabla = tabla['nombre'].capitalize()
+        json += f"url: http://localhost:8080/api/{tabla['nombre'].lower()}s\n"
+        es_compuesta = len(tabla['pk']) > 1
+        json += f"tabla: {nombre_tabla}\n\n{{\n"
+        if es_compuesta:
+            json += f"  \"id\": {{\n"
+            json += ',\n'.join(f"    \n\"{pk['atributo_padre']}\": \"{tipo_de_dato_en_java.get(pk['tipo_dato'], 'Integer')}\""for pk in tabla['pk'])
+            json += "\n  },\n"
+            for pk in tabla['pk']:
+                json += f"  \"{pk['tabla_padre']}\": {{\n    \"{pk['atributo_padre']}\": \"{tipo_de_dato_en_java.get(pk['tipo_dato'], 'Integer')}\",\n  }},\n"
+        else:
+            if len(tabla['pk']) == 1:
+                pk = tabla['pk'][0]
+                json += f"  \"{pk['nombre']}\": \"{tipo_de_dato_en_java.get(pk['tipo_dato'], 'Integer')}\",\n"
+        for atributo in tabla['atributos']:
+            es_fk = atributo.get('tabla_padre')
+            if es_fk:
+                json += f"  \"{atributo['tabla_padre']}\": {{\n    \"{atributo['atributo_padre']}\": \"{tipo_de_dato_en_java.get(atributo['tipo_dato'], 'Integer')}\",\n  }},\n"
+            else:
+                json += f"  \"{atributo['nombre']}\": \"{tipo_de_dato_en_java.get(atributo['tipo_dato'], 'String')}\",\n"
+        json += "}\n\n"
+    return json

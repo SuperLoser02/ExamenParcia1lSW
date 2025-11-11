@@ -214,3 +214,15 @@ class DiagramaViewSet(viewsets.ModelViewSet):
         response = HttpResponse(zip, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename=flutter_app.zip'
         return response
+    
+    @action(detail=True, methods=["GET"])
+    def json_backend(self,request, pk=None):
+        from script.generar_script import generar_json_backend
+        try:
+            diagrama = self.get_object()
+        except:
+            return Response({"error": "El diagrama no existe"}, status=404)
+        json_estructura = generar_json_backend(diagrama.id)
+        response = HttpResponse(json_estructura, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename="json_backend_{diagrama.id}.txt"'
+        return response
