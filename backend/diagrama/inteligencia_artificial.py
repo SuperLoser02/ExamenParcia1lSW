@@ -197,7 +197,7 @@ Si no entiendes: {"accion": "error", "mensaje": "explicación"}
         response = requests.post(
             f'{ollama_url}/api/generate',
             json={
-                "model": "llama3.2:3b",
+                "model": "llama3.1:8b",
                 "prompt": f"{system_prompt}\n\nUSUARIO: {texto_usuario}\n\nRESPUESTA JSON:",
                 "stream": False,
                 "temperature": 0.1,

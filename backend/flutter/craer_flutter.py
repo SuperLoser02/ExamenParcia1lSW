@@ -216,7 +216,12 @@ def generar_modelo_dart(tabla, base_models):
                 else:
                     f.write(f"        '{atributo['atributo_padre'].lower()}': {atributo['tabla_padre'].lower()}.{atributo['atributo_padre'].lower()},\n")
                 f.write("      },\n")
-            elif atributo['tipo_dato'] in ['date', 'datetime']:
+            elif atributo['tipo_dato'] in ['date']:
+                if atributo.get('is_nullable', False):
+                    f.write(f"      '{nombre_campo}': {nombre_campo}?.toIso8601String().split('T')[0],\n")
+                else:
+                    f.write(f"      '{nombre_campo}': {nombre_campo}.toIso8601String().split('T')[0],\n")
+            elif atributo['tipo_dato'] in ['datetime']:
                 if atributo.get('is_nullable', False):
                     f.write(f"      '{nombre_campo}': {nombre_campo}?.toIso8601String(),\n")
                 else:

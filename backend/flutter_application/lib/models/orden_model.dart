@@ -23,7 +23,7 @@ class Orden {
   Map<String, dynamic> toJson() {
     return {
       'ordenid': ordenid,
-      'ordenfecha': ordenfecha.toIso8601String(),
+      'ordenfecha': ordenfecha.toIso8601String().split('T')[0],
       'cliente' : {
         'clienteid': cliente.clienteid,
       },

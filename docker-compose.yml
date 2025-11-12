@@ -10,7 +10,7 @@ services:
     depends_on:
       - db
       - redis
-      # - ollama  # AGREGAR DEPENDENCIA
+      - ollama  # AGREGAR DEPENDENCIA
     ports:
       - "8000:8000"
     networks:
@@ -25,16 +25,16 @@ services:
     networks:
       - app-network
 
-#   ollama:
-#     image: ollama/ollama:latest
-#     container_name: ollama
-#     restart: always
-#     ports:
-#       - "11434:11434"
-#     volumes:
-#       - ollama_data:/root/.ollama
-#     networks:
-#       - app-network
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app-network
 #     # Comentar esto si no tienes GPU NVIDIA
 #     deploy:
 #       resources:
