@@ -24,7 +24,7 @@ class Orden {
     return {
       'ordenid': ordenid,
       'ordenfecha': ordenfecha.toIso8601String(),
-      'cliente': {
+      'cliente' : {
         'clienteid': cliente.clienteid,
       },
     };

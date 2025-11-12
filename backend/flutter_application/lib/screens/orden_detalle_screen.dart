@@ -48,7 +48,7 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
   Future<void> _deleteItem(int ordenid, int productoid) async {
     try {
       await _service.delete(ordenid, productoid);
-      _loadItems();
+      await _loadItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eliminado correctamente'), backgroundColor: Colors.green),
@@ -75,23 +75,25 @@ class _Orden_detalleScreenState extends State<Orden_detalleScreen> {
               await _service.create(newItem);
             } else {
                if (newItem.ordenid != item.ordenid || newItem.productoid != item.productoid) {
-                 await _service.delete(item.ordenid!, item.productoid!);
                  await _service.create(newItem);
+                 await _service.delete(item.ordenid!, item.productoid!);
                } else {
                  await _service.update(item.ordenid!, item.productoid!, newItem);
                }
             }
-            _loadItems();
+            await _loadItems();
             if (mounted) {
               Navigator.pop(parentContext);
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado'),
+                backgroundColor: Colors.green
+                ),
               );
             }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
               );
             }
           }
@@ -242,7 +244,7 @@ class _Orden_detalleFormDialogState extends State<Orden_detalleFormDialog> {
   List<Producto> _productoList = [];
   Producto? _selectedProducto;
   late TextEditingController _cantidadController;
-bool _isLoadingData = true;
+  bool _isLoadingData = true;
 
   @override
   void initState() {
@@ -250,8 +252,14 @@ bool _isLoadingData = true;
     _cantidadController = TextEditingController(
       text: widget.item != null ? widget.item!.cantidad.toString() : ''
     );
-    _loadOrden();
-    _loadProducto();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+    _loadOrden(),
+    _loadProducto(),
+    ]);
   }
 
   Future<void> _loadOrden() async {
@@ -264,14 +272,19 @@ bool _isLoadingData = true;
           if (widget.item?.ordenid != null) {
             // Buscar el objeto completo basado en el ID
             _selectedOrden = items.firstWhere(
-              (e) => e.ordenid == widget.item?.ordenid,
+              (cat) => cat.ordenid == widget.item!.ordenid,
               orElse: () => items.first,
             );
           }
+          _isLoadingData = false;
         });
       }
     } catch (e) {
-      // Error loading data
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
     }
   }
 
@@ -285,14 +298,19 @@ bool _isLoadingData = true;
           if (widget.item?.productoid != null) {
             // Buscar el objeto completo basado en el ID
             _selectedProducto = items.firstWhere(
-              (e) => e.productoid == widget.item?.productoid,
+              (cat) => cat.productoid == widget.item!.productoid,
               orElse: () => items.first,
             );
           }
+          _isLoadingData = false;
         });
       }
     } catch (e) {
-      // Error loading data
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
     }
   }
 
@@ -335,7 +353,7 @@ bool _isLoadingData = true;
                 items: _productoList.map((item) {
                   return DropdownMenuItem(
                     value: item,
-                    child: Text('${item.productonombre}'),
+                    child: Text('${item.nombreproducto}'),
                   );
                 }).toList(),
                 onChanged: (value) {

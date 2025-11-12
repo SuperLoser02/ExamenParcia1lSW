@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/catrgoria_model.dart';
+import '../models/categoria_model.dart';
 
-class CatrgoriaService {
-  static const String baseUrl = 'http://10.0.2.2:8080/api/catrgorias';
+class CategoriaService {
+  static const String baseUrl = 'http://10.0.2.2:8080/api/categorias';
 
-  Future<List<Catrgoria>> getAll() async {
+  Future<List<Categoria>> getAll() async {
     try {
       final response = await http.get(
         Uri.parse(baseUrl),
@@ -14,7 +14,7 @@ class CatrgoriaService {
 
       if (response.statusCode == 200) {
         List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Catrgoria.fromJson(json)).toList();
+        return jsonList.map((json) => Categoria.fromJson(json)).toList();
       } else {
         throw Exception('Error al cargar datos: ${response.statusCode}');
       }
@@ -23,7 +23,7 @@ class CatrgoriaService {
     }
   }
 
-  Future<Catrgoria> getById(int id) async {
+  Future<Categoria> getById(int id) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/$id'),
@@ -31,7 +31,7 @@ class CatrgoriaService {
       );
 
       if (response.statusCode == 200) {
-        return Catrgoria.fromJson(json.decode(response.body));
+        return Categoria.fromJson(json.decode(response.body));
       } else {
         throw Exception('Error: ${response.statusCode}');
       }
@@ -40,16 +40,16 @@ class CatrgoriaService {
     }
   }
 
-  Future<Catrgoria> create(Catrgoria catrgoria) async {
+  Future<Categoria> create(Categoria categoria) async {
     try {
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(catrgoria.toJson()),
+        body: json.encode(categoria.toJson()),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return Catrgoria.fromJson(json.decode(response.body));
+        return Categoria.fromJson(json.decode(response.body));
       } else {
         throw Exception('Error al crear: ${response.statusCode}');
       }
@@ -58,16 +58,16 @@ class CatrgoriaService {
     }
   }
 
-  Future<Catrgoria> update(int id, Catrgoria catrgoria) async {
+  Future<Categoria> update(int id, Categoria categoria) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/$id'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(catrgoria.toJson()),
+        body: json.encode(categoria.toJson()),
       );
 
       if (response.statusCode == 200) {
-        return Catrgoria.fromJson(json.decode(response.body));
+        return Categoria.fromJson(json.decode(response.body));
       } else {
         throw Exception('Error al actualizar: ${response.statusCode}');
       }

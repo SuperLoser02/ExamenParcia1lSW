@@ -16,7 +16,7 @@ public class Orden implements Serializable{
     private Integer ordenid;
 
     @Column(name = "ordenfecha", nullable = false)
-    private LocalDateTime ordenfecha;
+    private LocalDate ordenfecha;
 
     @ManyToOne
     @JoinColumn(name = "cliente_clienteid", referencedColumnName = "clienteid", nullable = false)
@@ -27,8 +27,8 @@ public class Orden implements Serializable{
     public Integer getOrdenid() { return ordenid; }
     public void setOrdenid(Integer ordenid) { this.ordenid = ordenid; }
 
-    public LocalDateTime getOrdenfecha() { return ordenfecha; }
-    public void setOrdenfecha(LocalDateTime ordenfecha) { this.ordenfecha = ordenfecha; }
+    public LocalDate getOrdenfecha() { return ordenfecha; }
+    public void setOrdenfecha(LocalDate ordenfecha) { this.ordenfecha = ordenfecha; }
 
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }

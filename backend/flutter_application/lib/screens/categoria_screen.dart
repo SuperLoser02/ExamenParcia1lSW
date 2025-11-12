@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../models/catrgoria_model.dart';
-import '../services/catrgoria_service.dart';
+import '../models/categoria_model.dart';
+import '../services/categoria_service.dart';
 
-class CatrgoriaScreen extends StatefulWidget {
-  const CatrgoriaScreen({super.key});
+class CategoriaScreen extends StatefulWidget {
+  const CategoriaScreen({super.key});
 
   @override
-  State<CatrgoriaScreen> createState() => _CatrgoriaScreenState();
+  State<CategoriaScreen> createState() => _CategoriaScreenState();
 }
 
-class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
-  final CatrgoriaService _service = CatrgoriaService();
-  List<Catrgoria> _items = [];
+class _CategoriaScreenState extends State<CategoriaScreen> {
+  final CategoriaService _service = CategoriaService();
+  List<Categoria> _items = [];
   bool _isLoading = true;
   String? _error;
 
@@ -44,7 +44,7 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
   Future<void> _deleteItem(int id) async {
     try {
       await _service.delete(id);
-      _loadItems();
+      await _loadItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eliminado correctamente'), backgroundColor: Colors.green),
@@ -59,12 +59,12 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
     }
   }
 
-  void _showFormDialog({Catrgoria? item}) {
+  void _showFormDialog({Categoria? item}) {
     showDialog(
       context: context,
-      builder: (context) => CatrgoriaFormDialog(
+      builder: (context) => CategoriaFormDialog(
         item: item,
-        onSave: (Catrgoria newItem) async {
+        onSave: (Categoria newItem) async {
           final parentContext = context;
           try {
             if (item == null) {
@@ -72,17 +72,19 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
             } else {
               await _service.update(item.categoriaid!, newItem);
             }
-            _loadItems();
+            await _loadItems();
             if (mounted) {
               Navigator.pop(parentContext);
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado'),
+                backgroundColor: Colors.green
+                ),
               );
             }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
               );
             }
           }
@@ -91,17 +93,18 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
     );
   }
 
-  void _showDetails(Catrgoria item) {
+  void _showDetails(Categoria item) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Detalles de Catrgoria'),
+        title: const Text('Detalles de Categoria'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Categoriaid: ${item.categoriaid}', style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
+            Text('Descripcion: ${item.descripcion}'),
           ],
         ),
         actions: [
@@ -115,7 +118,7 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Catrgoria'),
+        title: const Text('Categoria'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadItems),
         ],
@@ -145,7 +148,7 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
                         children: [
                           Icon(Icons.inbox, size: 60, color: Colors.grey),
                           SizedBox(height: 16),
-                          Text('No hay Catrgoria', style: TextStyle(fontSize: 16)),
+                          Text('No hay Categoria', style: TextStyle(fontSize: 16)),
                         ],
                       ),
                     )
@@ -157,6 +160,7 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: ListTile(
                             title: Text('ID: ${item.categoriaid}'),
+                                subtitle: Text('descripcion'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -210,27 +214,38 @@ class _CatrgoriaScreenState extends State<CatrgoriaScreen> {
   }
 }
 
-class CatrgoriaFormDialog extends StatefulWidget {
-  final Catrgoria? item;
-  final Function(Catrgoria) onSave;
+class CategoriaFormDialog extends StatefulWidget {
+  final Categoria? item;
+  final Function(Categoria) onSave;
 
-  const CatrgoriaFormDialog({super.key, this.item, required this.onSave});
+  const CategoriaFormDialog({super.key, this.item, required this.onSave});
 
   @override
-  State<CatrgoriaFormDialog> createState() => _CatrgoriaFormDialogState();
+  State<CategoriaFormDialog> createState() => _CategoriaFormDialogState();
 }
 
-class _CatrgoriaFormDialogState extends State<CatrgoriaFormDialog> {
+class _CategoriaFormDialogState extends State<CategoriaFormDialog> {
   final _formKey = GlobalKey<FormState>();
-bool _isLoadingData = true;
+  late TextEditingController _descripcionController;
+  bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
+    _descripcionController = TextEditingController(
+      text: widget.item?.descripcion != null ? widget.item!.descripcion.toString() : ''
+    );
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+    ]);
   }
 
   @override
   void dispose() {
+    _descripcionController.dispose();
     super.dispose();
   }
 
@@ -244,6 +259,11 @@ bool _isLoadingData = true;
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextFormField(
+                controller: _descripcionController,
+                decoration: const InputDecoration(labelText: 'Descripcion'),
+              ),
+              const SizedBox(height: 12),
             ],
           ),
         ),
@@ -256,8 +276,9 @@ bool _isLoadingData = true;
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              widget.onSave(Catrgoria(
+              widget.onSave(Categoria(
                 categoriaid: widget.item?.categoriaid,
+                descripcion: _descripcionController.text.isEmpty ? null : _descripcionController.text,
               ));
             }
           },

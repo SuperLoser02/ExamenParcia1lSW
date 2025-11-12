@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/producto_model.dart';
 import '../services/producto_service.dart';
-import '../models/catrgoria_model.dart';
-import '../services/catrgoria_service.dart';
+import '../models/categoria_model.dart';
+import '../services/categoria_service.dart';
 
 class ProductoScreen extends StatefulWidget {
   const ProductoScreen({super.key});
@@ -46,7 +46,7 @@ class _ProductoScreenState extends State<ProductoScreen> {
   Future<void> _deleteItem(int id) async {
     try {
       await _service.delete(id);
-      _loadItems();
+      await _loadItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eliminado correctamente'), backgroundColor: Colors.green),
@@ -74,17 +74,19 @@ class _ProductoScreenState extends State<ProductoScreen> {
             } else {
               await _service.update(item.productoid!, newItem);
             }
-            _loadItems();
+            await _loadItems();
             if (mounted) {
               Navigator.pop(parentContext);
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado'),
+                backgroundColor: Colors.green
+                ),
               );
             }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
               );
             }
           }
@@ -104,9 +106,8 @@ class _ProductoScreenState extends State<ProductoScreen> {
           children: [
             Text('Productoid: ${item.productoid}', style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Productonombre: ${item.productonombre}'),
-            Text('Precio: ${item.precio}'),
-            Text('Catrgoria_categoriaid: ${item.catrgoria?.toString() ?? "N/A"}'),
+            Text('Nombreproducto: ${item.nombreproducto}'),
+            Text('Categoria_categoriaid: ${item.categoria?.toString() ?? "N/A"}'),
           ],
         ),
         actions: [
@@ -162,7 +163,7 @@ class _ProductoScreenState extends State<ProductoScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: ListTile(
                             title: Text('ID: ${item.productoid}'),
-                                subtitle: Text('productonombre'),
+                                subtitle: Text('nombreproducto'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -228,45 +229,55 @@ class ProductoFormDialog extends StatefulWidget {
 
 class _ProductoFormDialogState extends State<ProductoFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _productonombreController;
-  late TextEditingController _precioController;
-  List<Catrgoria> _catrgoriaList = [];
-  Catrgoria? _selectedCatrgoria;
-bool _isLoadingData = true;
+  late TextEditingController _nombreproductoController;
+  List<Categoria> _categoriaList = [];
+  Categoria? _selectedCategoria;
+  bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    _productonombreController = TextEditingController(
-      text: widget.item != null ? widget.item!.productonombre.toString() : ''
+    _nombreproductoController = TextEditingController(
+      text: widget.item != null ? widget.item!.nombreproducto.toString() : ''
     );
-    _precioController = TextEditingController(
-      text: widget.item != null ? widget.item!.precio.toString() : ''
-    );
-    _loadCatrgoria();
+    _loadData();
   }
 
-  Future<void> _loadCatrgoria() async {
+  Future<void> _loadData() async {
+    await Future.wait([
+    _loadCategoria(),
+    ]);
+  }
+
+  Future<void> _loadCategoria() async {
     try {
-      final service = CatrgoriaService();
+      final service = CategoriaService();
       final items = await service.getAll();
       if (mounted) {
         setState(() {
-          _catrgoriaList = items;
-          if (widget.item?.catrgoria != null) {
-            _selectedCatrgoria = widget.item!.catrgoria;
+          _categoriaList = items;
+          if (widget.item?.categoria != null) {
+             // Buscar el objeto completo basado en el ID
+            _selectedCategoria = _categoriaList.firstWhere(
+              (cat) => cat.categoriaid == widget.item!.categoria.categoriaid,
+              orElse: () => items.first,
+            );
           }
+          _isLoadingData = false;
         });
       }
     } catch (e) {
-      // Error loading data
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
-    _productonombreController.dispose();
-    _precioController.dispose();
+    _nombreproductoController.dispose();
     super.dispose();
   }
 
@@ -281,30 +292,23 @@ bool _isLoadingData = true;
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: _productonombreController,
-                decoration: const InputDecoration(labelText: 'Productonombre'),
+                controller: _nombreproductoController,
+                decoration: const InputDecoration(labelText: 'Nombreproducto'),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _precioController,
-                decoration: const InputDecoration(labelText: 'Precio'),
-                keyboardType: TextInputType.number,
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<Catrgoria>(
-                value: _selectedCatrgoria,
-                decoration: const InputDecoration(labelText: 'Catrgoria_categoriaid'),
-                items: _catrgoriaList.map((item) {
+              DropdownButtonFormField<Categoria>(
+                value: _selectedCategoria,
+                decoration: const InputDecoration(labelText: 'Categoria_categoriaid'),
+                items: _categoriaList.map((item) {
                   return DropdownMenuItem(
                     value: item,
-                    child: Text('ID: ${item.categoriaid}'),
+                    child: Text('${item.descripcion}'),
                   );
                 }).toList(),
                 onChanged: (value) {
                   setState(() {
-                    _selectedCatrgoria = value;
+                    _selectedCategoria = value;
                   });
                 },
                 validator: (v) => v == null ? 'Requerido' : null,
@@ -324,9 +328,8 @@ bool _isLoadingData = true;
             if (_formKey.currentState!.validate()) {
               widget.onSave(Producto(
                 productoid: widget.item?.productoid,
-                productonombre: _productonombreController.text,
-                precio: double.parse(_precioController.text.replaceAll(',', '.')),
-                catrgoria: _selectedCatrgoria!,
+                nombreproducto: _nombreproductoController.text,
+                categoria: _selectedCategoria!,
               ));
             }
           },

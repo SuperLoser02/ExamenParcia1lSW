@@ -27,8 +27,12 @@ class Orden_detalle {
         'ordenid': ordenid,
         'productoid': productoid,
       },
-      'ordenid': ordenid,
-      'productoid': productoid,
+      'orden': {
+        'ordenid': ordenid,
+      },
+      'producto': {
+        'productoid': productoid,
+      },
       'cantidad': cantidad,
     };
   }

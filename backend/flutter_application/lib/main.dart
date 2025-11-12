@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'screens/categoria_screen.dart';
 import 'screens/cliente_screen.dart';
-import 'screens/catrgoria_screen.dart';
 import 'screens/orden_screen.dart';
 import 'screens/producto_screen.dart';
 import 'screens/orden_detalle_screen.dart';
@@ -58,11 +58,11 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ClienteScreen()),
+                    MaterialPageRoute(builder: (context) => const CategoriaScreen()),
                   );
                 },
                 icon: const Icon(Icons.table_chart),
-                label: Text('Gestionar Cliente'),
+                label: Text('Gestionar Categoria'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   textStyle: const TextStyle(fontSize: 16),
@@ -73,11 +73,11 @@ class HomePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CatrgoriaScreen()),
+                    MaterialPageRoute(builder: (context) => const ClienteScreen()),
                   );
                 },
                 icon: const Icon(Icons.table_chart),
-                label: Text('Gestionar Catrgoria'),
+                label: Text('Gestionar Cliente'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   textStyle: const TextStyle(fontSize: 16),

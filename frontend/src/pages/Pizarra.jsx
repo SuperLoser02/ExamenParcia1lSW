@@ -220,6 +220,17 @@ export default function Pizarra() {
               window.URL.revokeObjectURL(sqlUrl);
               setGenerandoArchivo(false);
               break;
+            
+            case "generar.json":
+              const jsonBlob = new Blob([payload.contenido], { type: 'application/json' });
+              const jsonUrl = window.URL.createObjectURL(jsonBlob);
+              const jsonLink = document.createElement('a')
+              jsonLink.href = jsonUrl;
+              jsonLink.download = payload.nombre_archivo;
+              jsonLink.click();
+              window.URL.revokeObjectURL(jsonUrl);
+              setGenerandoArchivo(false);
+              break;
 
             case "generar.springboot":
               // Decodificar base64 y descargar ZIP
@@ -233,6 +244,18 @@ export default function Pizarra() {
               window.URL.revokeObjectURL(zipUrl);
               setGenerandoArchivo(false);
               break;
+
+            case "generar.flutter":
+              const flutterBytes = Uint8Array.from(atob(payload.contenido), c => c.charCodeAt(0));
+              const flutterBlob = new Blob([flutterBytes], { type: 'application/zip' });
+              const flutterUrl = window.URL.createObjectURL(flutterBlob);
+              const flutterLink = document.createElement('a');
+              flutterLink.href = flutterUrl;
+              flutterLink.download = payload.nombre_archivo;
+              flutterLink.click();
+              window.URL.revokeObjectURL(flutterUrl)
+              setGenerandoArchivo(false);
+              break
 
             case "ia_response":
               setRespuestaIA(payload);
@@ -476,6 +499,22 @@ const handleActualizarTabla = () => {
       payload: { diagrama_id: id }
     });
   };
+
+  const handleGenerarJSON = () => {
+    setGenerandoArchivo(true);
+    sendMessage({
+      accion: "generar.json",
+      payload: { diagrama_id: id }
+    });
+  }
+
+  const handleGenerarFLUTTER = () => {
+    setGenerandoArchivo(true);
+    sendMessage({
+      accion: "generar.flutter",
+      payload: { diagrama_id: id }
+    });
+  }
 
   // Función para generar Spring Boot
   const handleGenerarSpringBoot = () => {
@@ -852,6 +891,38 @@ const handleActualizarAtributo = () => {
       <h1 style={styles.headerTitle}>{diagramaNombre}</h1>
   
       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <button
+          onClick={handleGenerarJSON}
+          disabled={generandoArchivo}
+          style={{
+            backgroundColor: "#4010b9",
+            color: "white",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            cursor: generandoArchivo ? "not-allowed" : "pointer",
+            fontWeight: "500",
+            opacity: generandoArchivo ? 0.6 : 1
+          }}
+        >
+          {generandoArchivo ? "Generando..." : "Generar JSON"}
+        </button>
+        <button
+          onClick={handleGenerarFLUTTER}
+          disabled={generandoArchivo}
+          style={{
+            backgroundColor: "#afd883",
+            color: "white",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "6px",
+            cursor: generandoArchivo ? "not-allowed" : "pointer",
+            fontWeight: "500",
+            opacity: generandoArchivo ? 0.6 : 1
+          }}
+        >
+          {generandoArchivo ? "Generando..." : "Generar FLUTTER"}
+        </button>
         <button
           onClick={handleGenerarSQL}
           disabled={generandoArchivo}

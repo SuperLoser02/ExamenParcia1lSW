@@ -210,11 +210,11 @@ def generar_modelo_dart(tabla, base_models):
             
             if es_fk:
                 # Para FKs, enviamos solo el ID
-                f.write(f"      '{pk['nombre'].lower()}' : {{\n")
+                f.write(f"      '{atributo['tabla_padre'].lower()}' : {{\n")
                 if atributo.get('is_nullable', False):
-                    f.write(f"        '{atributo['tabla_padre'].lower()}': {atributo['tabla_padre'].lower()}?.{atributo['atributo_padre'].lower()},\n")
+                    f.write(f"        '{atributo['atributo_padre'].lower()}': {atributo['tabla_padre'].lower()}?.{atributo['atributo_padre'].lower()},\n")
                 else:
-                    f.write(f"        '{atributo['tabla_padre'].lower()}': {atributo['tabla_padre'].lower()}.{atributo['atributo_padre'].lower()},\n")
+                    f.write(f"        '{atributo['atributo_padre'].lower()}': {atributo['tabla_padre'].lower()}.{atributo['atributo_padre'].lower()},\n")
                 f.write("      },\n")
             elif atributo['tipo_dato'] in ['date', 'datetime']:
                 if atributo.get('is_nullable', False):
@@ -911,7 +911,7 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
     f.write("    await Future.wait([\n")
     for atributo in tabla['fk']:
         tabla_padre_cap = atributo['tabla_padre'].capitalize()
-        f.write(f"    _load{tabla_padre_cap}();\n")
+        f.write(f"    _load{tabla_padre_cap}(),\n")
     f.write("    ]);\n")
     f.write("  }\n\n")
     
@@ -988,11 +988,11 @@ def generar_formulario_dart(f, tabla, nombre_clase, todas_tablas):
             f.write(f"          if (widget.item?.{tabla_padre_lower} != null) {{\n")
             f.write("             // Buscar el objeto completo basado en el ID\n")
             f.write(f"            _selected{tabla_padre_cap} = _{tabla_padre_lower}List.firstWhere(\n")
-            f.write(f"              (cat) => cat.{atributo['atributo_padre'].lower()} == widget.item!.{tabla_padre_lower}.{pk['atributo_padre'].lower()},\n")
+            f.write(f"              (cat) => cat.{atributo['atributo_padre'].lower()} == widget.item!.{tabla_padre_lower}.{atributo['atributo_padre'].lower()},\n")
             f.write(f"              orElse: () => items.first,\n")
             f.write(f"            );\n")
             f.write("          }\n")
-            f.write("          _isLodingData = false;\n")
+            f.write("          _isLoadingData = false;\n")
             f.write("        });\n")
             f.write("      }\n")
             f.write("    } catch (e) {\n")

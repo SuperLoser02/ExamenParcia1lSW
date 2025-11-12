@@ -140,6 +140,8 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
             "tabla.getById": self.get_tabla_por_id, 
             "generar.sql": self.generar_sql,
             "generar.springboot": self.generar_springboot,
+            "generar.json": self.generar_json,
+            "generar.flutter": self.generar_flutter,
         }
         
         print('🔹 Accion recibida:', accion, payload)
@@ -431,6 +433,43 @@ class DiagramaConsumer(AsyncWebsocketConsumer):
     def run_springboot_generation(self, diagrama_id):
         from script.generar_script import spring_boot  # Función auxiliar
         return spring_boot(diagrama_id)
+    
+    # ==================== GENERAR JSON ====================
+    async def generar_json(self, payload):
+        diagrama_id = payload.get("diagrama_id")
+        
+        # Llamar a la función SQL de forma síncrona
+        json_content = await self.run_json_generation(diagrama_id)
+        
+        return {
+            "tipo": "archivo",
+            "formato": "json",
+            "contenido": json_content,
+            "nombre_archivo": f"{self.diagrama.nombre}.json"
+        }
+    @database_sync_to_async
+    def run_json_generation(self, diagrama_id):
+        from script.generar_script import generar_json_backend  # Función auxiliar
+        return generar_json_backend(diagrama_id)
+    
+    # ==================== GENERAR FLUTTER ====================
+    async def generar_flutter(self, payload):
+        diagrama_id = payload.get("diagrama_id")
+        
+        # Generar el ZIP
+        zip_data = await self.run_flutter_generation(diagrama_id)
+        
+        return {
+            "tipo": "archivo",
+            "formato": "zip",
+            "contenido": zip_data,  # Base64 encoded
+            "nombre_archivo": f"{self.diagrama.nombre}_flutter.zip"
+        }
+    
+    @database_sync_to_async
+    def run_flutter_generation(self, diagrama_id):
+        from flutter.craer_flutter import flutter  # Función auxiliar
+        return flutter(diagrama_id)
     
     @database_sync_to_async
     def procesar_ia_command(self, audio_base64, texto, diagrama_id, user):

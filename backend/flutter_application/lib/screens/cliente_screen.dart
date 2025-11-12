@@ -44,7 +44,7 @@ class _ClienteScreenState extends State<ClienteScreen> {
   Future<void> _deleteItem(int id) async {
     try {
       await _service.delete(id);
-      _loadItems();
+      await _loadItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eliminado correctamente'), backgroundColor: Colors.green),
@@ -72,17 +72,19 @@ class _ClienteScreenState extends State<ClienteScreen> {
             } else {
               await _service.update(item.clienteid!, newItem);
             }
-            _loadItems();
+            await _loadItems();
             if (mounted) {
               Navigator.pop(parentContext);
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado'),
+                backgroundColor: Colors.green
+                ),
               );
             }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
               );
             }
           }
@@ -231,7 +233,7 @@ class _ClienteFormDialogState extends State<ClienteFormDialog> {
   late TextEditingController _apellidoController;
   late TextEditingController _emailController;
   late TextEditingController _email2Controller;
-bool _isLoadingData = true;
+  bool _isLoadingData = true;
 
   @override
   void initState() {
@@ -248,6 +250,12 @@ bool _isLoadingData = true;
     _email2Controller = TextEditingController(
       text: widget.item?.email2 != null ? widget.item!.email2.toString() : ''
     );
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+    ]);
   }
 
   @override

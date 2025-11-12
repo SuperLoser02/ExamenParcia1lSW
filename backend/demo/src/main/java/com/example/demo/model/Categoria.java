@@ -7,24 +7,30 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Entity
-@Table(name = "catrgoria")
-public class Catrgoria implements Serializable{
+@Table(name = "categoria")
+public class Categoria implements Serializable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "categoriaid", nullable = false)
     private Integer categoriaid;
 
-    public Catrgoria() {}
+    @Column(name = "descripcion", nullable = true, length = 255)
+    private String descripcion;
+
+    public Categoria() {}
 
     public Integer getCategoriaid() { return categoriaid; }
     public void setCategoriaid(Integer categoriaid) { this.categoriaid = categoriaid; }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Catrgoria that = (Catrgoria) o;
+        Categoria that = (Categoria) o;
         return Objects.equals(categoriaid, that.categoriaid);
     }
 

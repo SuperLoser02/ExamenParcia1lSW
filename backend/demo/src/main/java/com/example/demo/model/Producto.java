@@ -15,29 +15,23 @@ public class Producto implements Serializable{
     @Column(name = "productoid", nullable = false)
     private Integer productoid;
 
-    @Column(name = "productonombre", nullable = false, length = 100)
-    private String productonombre;
-
-    @Column(name = "precio", nullable = false, precision = 10, scale = 2)
-    private BigDecimal precio;
+    @Column(name = "nombreproducto", nullable = false, length = 100)
+    private String nombreproducto;
 
     @ManyToOne
-    @JoinColumn(name = "catrgoria_categoriaid", referencedColumnName = "categoriaid", nullable = false)
-    private Catrgoria catrgoria;
+    @JoinColumn(name = "categoria_categoriaid", referencedColumnName = "categoriaid", nullable = false)
+    private Categoria categoria;
 
     public Producto() {}
 
     public Integer getProductoid() { return productoid; }
     public void setProductoid(Integer productoid) { this.productoid = productoid; }
 
-    public String getProductonombre() { return productonombre; }
-    public void setProductonombre(String productonombre) { this.productonombre = productonombre; }
+    public String getNombreproducto() { return nombreproducto; }
+    public void setNombreproducto(String nombreproducto) { this.nombreproducto = nombreproducto; }
 
-    public BigDecimal getPrecio() { return precio; }
-    public void setPrecio(BigDecimal precio) { this.precio = precio; }
-
-    public Catrgoria getCatrgoria() { return catrgoria; }
-    public void setCatrgoria(Catrgoria catrgoria) { this.catrgoria = catrgoria; }
+    public Categoria getCategoria() { return categoria; }
+    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
 
     @Override
     public boolean equals(Object o) {

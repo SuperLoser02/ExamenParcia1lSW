@@ -46,7 +46,7 @@ class _OrdenScreenState extends State<OrdenScreen> {
   Future<void> _deleteItem(int id) async {
     try {
       await _service.delete(id);
-      _loadItems();
+      await _loadItems();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eliminado correctamente'), backgroundColor: Colors.green),
@@ -74,17 +74,19 @@ class _OrdenScreenState extends State<OrdenScreen> {
             } else {
               await _service.update(item.ordenid!, newItem);
             }
-            _loadItems();
+            await _loadItems();
             if (mounted) {
               Navigator.pop(parentContext);
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado')),
+                SnackBar(content: Text(item == null ? 'Creado correctamente' : 'Actualizado'),
+                backgroundColor: Colors.green
+                ),
               );
             }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(parentContext).showSnackBar(
-                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
               );
             }
           }
@@ -230,7 +232,7 @@ class _OrdenFormDialogState extends State<OrdenFormDialog> {
   late TextEditingController _ordenfechaController;
   List<Cliente> _clienteList = [];
   Cliente? _selectedCliente;
-bool _isLoadingData = true;
+  bool _isLoadingData = true;
 
   @override
   void initState() {
@@ -240,7 +242,13 @@ bool _isLoadingData = true;
           ? widget.item!.ordenfecha.toIso8601String().split('T')[0]
           : ''
     );
-    _loadCliente();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+    _loadCliente(),
+    ]);
   }
 
   Future<void> _loadCliente() async {
@@ -251,12 +259,21 @@ bool _isLoadingData = true;
         setState(() {
           _clienteList = items;
           if (widget.item?.cliente != null) {
-            _selectedCliente = widget.item!.cliente;
+             // Buscar el objeto completo basado en el ID
+            _selectedCliente = _clienteList.firstWhere(
+              (cat) => cat.clienteid == widget.item!.cliente.clienteid,
+              orElse: () => items.first,
+            );
           }
+          _isLoadingData = false;
         });
       }
     } catch (e) {
-      // Error loading data
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
     }
   }
 
