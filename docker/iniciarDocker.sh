@@ -51,7 +51,7 @@ fi
 
 # Iniciar el servidor con Daphne (para WebSockets)
 echo "🚀 Iniciando Django con Daphne..."
-#daphne -b 0.0.0.0 -p 8000 primer_parcial.asgi:application
+daphne -b 0.0.0.0 -p 8000 primer_parcial.asgi:application
 
 # Si prefieres runserver (sin WebSockets en producción):
-python manage.py runserver 0.0.0.0:8000
+# python manage.py runserver 0.0.0.0:8000
